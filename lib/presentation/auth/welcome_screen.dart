@@ -17,11 +17,12 @@ class WelcomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(flex: 2),
-              // App Logo / Icon Placeholder
-              const Icon(
-                Icons.spa_rounded,
-                size: 80,
-                color: AppTheme.primaryColor,
+              // App Logo
+              Center(
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  height: 120,
+                ),
               ),
               const SizedBox(height: 32),
               Text(
