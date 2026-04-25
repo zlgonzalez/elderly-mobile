@@ -60,6 +60,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Center(
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    height: 80,
+                  ),
+                ),
+                const SizedBox(height: 32),
                 if (authState.error != null)
                   Container(
                     padding: const EdgeInsets.all(12),
