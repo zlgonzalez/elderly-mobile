@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CareTasksMicroserviceContract",
+  "description": "Endpoints and schemas for daily schedule and purposeful care tasks",
+  "endpoints": {
+    "listTasks": {
+      "method": "GET",
+      "path": "/api/v1/residents/{residentId}/tasks",
+      "response": {
+        "status": 200,
+        "body": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "time", "category", "status"],
+            "properties": {
+              "id": { "type": "string" },
+              "residentId": { "type": "string" },
+              "title": { "type": "string" },
+              "description": { "type": "string" },
+              "time": { "type": "string" },
+              "category": { "type": "string", "enum": ["physical", "activity", "social", "purposeful"] },
+              "status": { "type": "string", "enum": ["pending", "inProgress", "completed", "skipped"] },
+              "completedBy": { "type": "string" },
+              "completionNote": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "createTask": {
+      "method": "POST",
+      "path": "/api/v1/residents/{residentId}/tasks",
+      "request": {
+        "type": "object",
+        "required": ["title", "description", "category", "time"],
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "category": { "type": "string" },
+          "time": { "type": "string" }
+        }
+      }
+    },
+    "updateTaskStatus": {
+      "method": "PATCH",
+      "path": "/api/v1/residents/{residentId}/tasks/{taskId}/status",
+      "request": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string", "enum": ["pending", "inProgress", "completed", "skipped"] },
+          "completedBy": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}

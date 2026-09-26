@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_theme.dart';
+import 'app_bottom_nav.dart';
 
 class BottomNav extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -12,38 +12,14 @@ class BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NavigationBar(
-      selectedIndex: navigationShell.currentIndex,
-      onDestinationSelected: (index) {
+    return AppBottomNav(
+      currentIndex: navigationShell.currentIndex,
+      onTabSelected: (index) {
         navigationShell.goBranch(
           index,
           initialLocation: index == navigationShell.currentIndex,
         );
       },
-      backgroundColor: AppTheme.surfaceColor,
-      indicatorColor: AppTheme.primaryColor.withAlpha(26),
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.dashboard_outlined),
-          selectedIcon: Icon(Icons.dashboard),
-          label: 'Dashboard',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.people_outline),
-          selectedIcon: Icon(Icons.people),
-          label: 'Residents',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.chat_bubble_outline),
-          selectedIcon: Icon(Icons.chat_bubble),
-          label: 'CareGuide',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.settings_outlined),
-          selectedIcon: Icon(Icons.settings),
-          label: 'Settings',
-        ),
-      ],
     );
   }
 }

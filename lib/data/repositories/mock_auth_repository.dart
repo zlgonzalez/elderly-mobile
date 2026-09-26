@@ -1,0 +1,85 @@
+import '../../domain/entities/user_profile.dart';
+import 'auth_repository.dart';
+
+class MockAuthRepository implements AuthRepository {
+  UserProfile? _currentUser;
+
+  static const UserProfile sarahThompson = UserProfile(
+    id: 'user_sarah',
+    username: 'sarah.thompson',
+    fullName: 'Sarah Thompson',
+    role: UserRole.familyMember,
+    relation: 'Daughter',
+    phone: '555-0123',
+    linkedResidentId: 'res_margaret',
+  );
+
+  static const UserProfile lisaChen = UserProfile(
+    id: 'user_lisa',
+    username: 'lisa.chen',
+    fullName: 'Lisa Chen',
+    role: UserRole.familyMember,
+    relation: 'Daughter',
+    phone: '555-0144',
+    linkedResidentId: 'res_robert',
+  );
+
+  static const UserProfile jamesWilliams = UserProfile(
+    id: 'user_james',
+    username: 'james.williams',
+    fullName: 'James Williams',
+    role: UserRole.familyMember,
+    relation: 'Son',
+    phone: '555-0188',
+    linkedResidentId: 'res_dorothy',
+  );
+
+  static const List<UserProfile> demoProfiles = [
+    sarahThompson,
+    lisaChen,
+    jamesWilliams,
+  ];
+
+  @override
+  // [MICROSERVICE_INTEGRATION_POINT]: AuthService - POST /api/v1/auth/login
+  // TODO(microservice): Replace mock data with: final res = await apiClient.post('/api/v1/auth/login', body: {'username': username, 'password': password});
+  Future<UserProfile?> loginWithCredentials(String username, String password) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    final match = demoProfiles.firstWhere(
+      (p) => p.username.toLowerCase() == username.toLowerCase().trim(),
+      orElse: () => UserProfile(
+        id: 'user_custom',
+        username: username,
+        fullName: username,
+        role: UserRole.familyMember,
+        relation: 'Family Member',
+        phone: '555-0100',
+        linkedResidentId: 'res_margaret',
+      ),
+    );
+    _currentUser = match;
+    return _currentUser;
+  }
+
+  @override
+  // [MICROSERVICE_INTEGRATION_POINT]: AuthService - POST /api/v1/auth/demo-switch
+  // TODO(microservice): Replace mock data with: final res = await apiClient.post('/api/v1/auth/demo-switch', body: {'profileId': profileId});
+  Future<UserProfile> selectDemoProfile(String profileId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    _currentUser = demoProfiles.firstWhere(
+      (p) => p.id == profileId || p.username == profileId,
+      orElse: () => sarahThompson,
+    );
+    return _currentUser!;
+  }
+
+  @override
+  Future<void> logout() async {
+    _currentUser = null;
+  }
+
+  @override
+  Future<UserProfile?> getCurrentUser() async {
+    return _currentUser;
+  }
+}

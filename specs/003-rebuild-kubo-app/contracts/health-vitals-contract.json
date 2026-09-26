@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HealthVitalsMicroserviceContract",
+  "description": "Endpoints and schemas for physiological vitals and clinical observations",
+  "endpoints": {
+    "getVitals": {
+      "method": "GET",
+      "path": "/api/v1/residents/{residentId}/vitals",
+      "response": {
+        "status": 200,
+        "body": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "timestamp", "bloodPressure", "heartRate", "temperature"],
+            "properties": {
+              "id": { "type": "string" },
+              "residentId": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" },
+              "bloodPressure": { "type": "string" },
+              "heartRate": { "type": "integer" },
+              "temperature": { "type": "number" },
+              "weight": { "type": "number" },
+              "mobilityLevel": { "type": "string" },
+              "painLevel": { "type": "integer", "minimum": 0, "maximum": 10 },
+              "recordedBy": { "type": "string" },
+              "clinicalNotes": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "recordVitals": {
+      "method": "POST",
+      "path": "/api/v1/residents/{residentId}/vitals",
+      "request": {
+        "type": "object",
+        "required": ["bloodPressure", "heartRate", "temperature", "recordedBy"],
+        "properties": {
+          "bloodPressure": { "type": "string" },
+          "heartRate": { "type": "integer" },
+          "temperature": { "type": "number" },
+          "weight": { "type": "number" },
+          "mobilityLevel": { "type": "string" },
+          "painLevel": { "type": "integer" },
+          "recordedBy": { "type": "string" },
+          "clinicalNotes": { "type": "string" }
+        }
+      }
+    }
+  }
+}
