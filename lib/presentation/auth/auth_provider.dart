@@ -1,57 +1,80 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/entities/user_profile.dart';
 import '../../data/repositories/auth_repository.dart';
-import '../../core/network/api_client.dart';
-import '../../data/local/user_entity.dart';
-
-final apiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient(baseUrl: 'https://api.evergreen.local');
-});
-
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final apiClient = ref.watch(apiClientProvider);
-  return AuthRepository(apiClient: apiClient);
-});
+import '../../data/repositories/mock_auth_repository.dart';
 
 class AuthState {
+  final UserProfile? user;
   final bool isLoading;
-  final UserEntity? user;
-  final String? error;
+  final String? errorMessage;
 
-  AuthState({this.isLoading = false, this.user, this.error});
+  const AuthState({
+    this.user,
+    this.isLoading = false,
+    this.errorMessage,
+  });
 
-  AuthState copyWith({bool? isLoading, UserEntity? user, String? error, bool clearError = false}) {
+  bool get isAuthenticated => user != null;
+
+  AuthState copyWith({
+    UserProfile? user,
+    bool? isLoading,
+    String? errorMessage,
+    bool clearUser = false,
+  }) {
     return AuthState(
+      user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,
-      user: user ?? this.user,
-      error: clearError ? null : (error ?? this.error),
+      errorMessage: errorMessage,
     );
   }
 }
 
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return MockAuthRepository();
+});
+
 class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthRepository _authRepository;
+  final AuthRepository _repository;
 
-  AuthNotifier(this._authRepository) : super(AuthState());
+  AuthNotifier(this._repository) : super(const AuthState());
 
-  Future<bool> login(String username, String password) async {
-    state = state.copyWith(isLoading: true, clearError: true);
+  Future<bool> selectDemoProfile(String profileId) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      final user = await _authRepository.login(username, password);
-      state = state.copyWith(isLoading: false, user: user);
+      final user = await _repository.selectDemoProfile(profileId);
+      state = state.copyWith(user: user, isLoading: false);
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
       return false;
     }
   }
 
-  void logout() {
-    _authRepository.logout();
-    state = AuthState();
+  Future<bool> login(String username, String password) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final user = await _repository.loginWithCredentials(username, password);
+      if (user != null) {
+        state = state.copyWith(user: user, isLoading: false);
+        return true;
+      } else {
+        state = state.copyWith(isLoading: false, errorMessage: 'Invalid username or password');
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      return false;
+    }
+  }
+
+  Future<void> logout() async {
+    await _repository.logout();
+    state = const AuthState();
   }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  final authRepository = ref.watch(authRepositoryProvider);
-  return AuthNotifier(authRepository);
+  final repo = ref.watch(authRepositoryProvider);
+  return AuthNotifier(repo);
 });

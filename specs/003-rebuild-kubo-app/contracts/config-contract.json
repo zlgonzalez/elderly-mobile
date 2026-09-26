@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AppConfigSchema",
+  "description": "Configuration schema for compile-time and runtime microservice environment settings",
+  "type": "object",
+  "required": ["apiBaseUrl", "useMockData", "environment"],
+  "properties": {
+    "apiBaseUrl": {
+      "type": "string",
+      "description": "Base Gateway URL for microservices",
+      "default": "http://localhost:8080/api/v1"
+    },
+    "authServiceUrl": {
+      "type": "string",
+      "description": "Auth microservice direct URL",
+      "default": "http://localhost:8081"
+    },
+    "careServiceUrl": {
+      "type": "string",
+      "description": "Care tasks & records microservice direct URL",
+      "default": "http://localhost:8082"
+    },
+    "aiServiceUrl": {
+      "type": "string",
+      "description": "AI assistance backend URL",
+      "default": "http://localhost:8083"
+    },
+    "geminiApiKey": {
+      "type": "string",
+      "description": "Optional direct Gemini API Key for client-side streaming"
+    },
+    "useMockData": {
+      "type": "boolean",
+      "description": "Toggle between offline mock data providers and live microservices",
+      "default": true
+    },
+    "environment": {
+      "type": "string",
+      "enum": ["dev", "staging", "prod"],
+      "default": "dev"
+    }
+  }
+}

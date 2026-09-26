@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AiAssistantMicroserviceContract",
+  "description": "Endpoints and schemas for contextual dementia care assistant queries",
+  "endpoints": {
+    "askAssistant": {
+      "method": "POST",
+      "path": "/api/v1/ai/ask",
+      "request": {
+        "type": "object",
+        "required": ["residentId", "contextTab", "message"],
+        "properties": {
+          "residentId": { "type": "string" },
+          "contextTab": { "type": "string", "enum": ["familyPortal", "memoryBox", "careTasks", "healthVitals", "moodJournal", "activityGuide"] },
+          "message": { "type": "string" },
+          "history": { "type": "array" }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "type": "object",
+          "required": ["response", "suggestedQuestions"],
+          "properties": {
+            "response": { "type": "string" },
+            "suggestedQuestions": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    }
+  }
+}

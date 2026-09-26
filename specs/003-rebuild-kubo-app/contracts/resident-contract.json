@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ResidentMicroserviceContract",
+  "description": "Endpoints and schemas for the Resident & Story Microservice",
+  "endpoints": {
+    "getResident": {
+      "method": "GET",
+      "path": "/api/v1/residents/{id}",
+      "description": "Fetch complete resident profile, life portrait, and medical baseline",
+      "response": {
+        "status": 200,
+        "body": {
+          "type": "object",
+          "required": ["id", "name", "age", "biography", "conditions", "allergies"],
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "age": { "type": "integer" },
+            "avatarUrl": { "type": "string" },
+            "biography": { "type": "string" },
+            "quote": { "type": "string" },
+            "education": { "type": "string" },
+            "interests": { "type": "array", "items": { "type": "string" } },
+            "conditions": { "type": "array", "items": { "type": "string" } },
+            "allergies": { "type": "array", "items": { "type": "string" } },
+            "milestones": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["year", "title", "description"],
+                "properties": {
+                  "year": { "type": "integer" },
+                  "title": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

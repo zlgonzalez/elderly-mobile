@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_colors.dart';
 
 class SidebarNav extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -21,49 +21,61 @@ class SidebarNav extends StatelessWidget {
           initialLocation: index == navigationShell.currentIndex,
         );
       },
-      backgroundColor: AppTheme.surfaceColor,
-      indicatorColor: AppTheme.primaryColor.withAlpha(26),
+      backgroundColor: AppColors.surface,
+      indicatorColor: AppColors.surfaceVariant,
       labelType: NavigationRailLabelType.all,
-      selectedLabelTextStyle: GoogleFonts.publicSans(
-        color: AppTheme.primaryColor,
+      selectedLabelTextStyle: GoogleFonts.plusJakartaSans(
+        color: AppColors.primary,
         fontWeight: FontWeight.bold,
+        fontSize: 11,
       ),
-      unselectedLabelTextStyle: GoogleFonts.publicSans(
-        color: AppTheme.textSecondary,
+      unselectedLabelTextStyle: GoogleFonts.plusJakartaSans(
+        color: AppColors.textSecondary,
+        fontSize: 11,
       ),
-      selectedIconTheme: const IconThemeData(color: AppTheme.primaryColor),
-      unselectedIconTheme: const IconThemeData(color: AppTheme.textSecondary),
+      selectedIconTheme: const IconThemeData(color: AppColors.primary),
+      unselectedIconTheme: const IconThemeData(color: AppColors.textSecondary),
       destinations: const [
         NavigationRailDestination(
-          icon: Icon(Icons.dashboard_outlined),
-          selectedIcon: Icon(Icons.dashboard),
-          label: Text('Dashboard'),
+          icon: Icon(Icons.home_outlined),
+          selectedIcon: Icon(Icons.home),
+          label: Text('Portal'),
         ),
         NavigationRailDestination(
-          icon: Icon(Icons.people_outline),
-          selectedIcon: Icon(Icons.people),
-          label: Text('Residents'),
+          icon: Icon(Icons.photo_album_outlined),
+          selectedIcon: Icon(Icons.photo_album),
+          label: Text('Memories'),
         ),
         NavigationRailDestination(
-          icon: Icon(Icons.chat_bubble_outline),
-          selectedIcon: Icon(Icons.chat_bubble),
-          label: Text('CareGuide'),
+          icon: Icon(Icons.mood_outlined),
+          selectedIcon: Icon(Icons.mood),
+          label: Text('Mood'),
         ),
         NavigationRailDestination(
-          icon: Icon(Icons.settings_outlined),
-          selectedIcon: Icon(Icons.settings),
-          label: Text('Settings'),
+          icon: Icon(Icons.checklist_outlined),
+          selectedIcon: Icon(Icons.checklist),
+          label: Text('Tasks'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.monitor_heart_outlined),
+          selectedIcon: Icon(Icons.monitor_heart),
+          label: Text('Health'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.spa_outlined),
+          selectedIcon: Icon(Icons.spa),
+          label: Text('Guide'),
         ),
       ],
-      leading: Column(
+      leading: const Column(
         children: [
-          const SizedBox(height: 24),
-          const Icon(
+          SizedBox(height: 24),
+          Icon(
             Icons.spa_rounded,
-            color: AppTheme.primaryColor,
+            color: AppColors.primary,
             size: 32,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
         ],
       ),
     );

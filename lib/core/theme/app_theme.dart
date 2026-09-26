@@ -1,147 +1,157 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'app_colors.dart';
 
 class AppTheme {
-  // Primary Stitch Design Token
-  static const Color primaryColor = Color(0xFF4C614B);
-  
-  // Additional palette based on 'Prepared Environment' aesthetic
-  static const Color backgroundColor = Color(0xFFFAF9F6); // Warm off-white
-  static const Color surfaceColor = Colors.white;
-  static const Color textPrimary = Color(0xFF2C3E2D);
-  static const Color textSecondary = Color(0xFF5E6C5F);
-  static const Color errorColor = Color(0xFFD32F2F);
+  AppTheme._();
 
   static ThemeData get lightTheme {
     final baseTextTheme = ThemeData.light().textTheme;
-    
-    // Newsreader for headings, Public Sans for body text
+
     final textTheme = baseTextTheme.copyWith(
-      displayLarge: GoogleFonts.newsreader(
+      displayLarge: GoogleFonts.notoSerif(
         textStyle: baseTextTheme.displayLarge,
-        color: textPrimary,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.bold,
       ),
-      displayMedium: GoogleFonts.newsreader(
+      displayMedium: GoogleFonts.notoSerif(
         textStyle: baseTextTheme.displayMedium,
-        color: textPrimary,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.bold,
       ),
-      displaySmall: GoogleFonts.newsreader(
+      displaySmall: GoogleFonts.notoSerif(
         textStyle: baseTextTheme.displaySmall,
-        color: textPrimary,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
       ),
-      headlineLarge: GoogleFonts.newsreader(
+      headlineLarge: GoogleFonts.notoSerif(
         textStyle: baseTextTheme.headlineLarge,
-        color: textPrimary,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
       ),
-      headlineMedium: GoogleFonts.newsreader(
+      headlineMedium: GoogleFonts.notoSerif(
         textStyle: baseTextTheme.headlineMedium,
-        color: textPrimary,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
       ),
-      headlineSmall: GoogleFonts.newsreader(
+      headlineSmall: GoogleFonts.notoSerif(
         textStyle: baseTextTheme.headlineSmall,
-        color: textPrimary,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
       ),
-      titleLarge: GoogleFonts.newsreader(
+      titleLarge: GoogleFonts.plusJakartaSans(
         textStyle: baseTextTheme.titleLarge,
-        color: textPrimary,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
       ),
-      titleMedium: GoogleFonts.publicSans(
+      titleMedium: GoogleFonts.plusJakartaSans(
         textStyle: baseTextTheme.titleMedium,
-        color: textPrimary,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
       ),
-      titleSmall: GoogleFonts.publicSans(
+      titleSmall: GoogleFonts.plusJakartaSans(
         textStyle: baseTextTheme.titleSmall,
-        color: textPrimary,
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.w600,
       ),
-      bodyLarge: GoogleFonts.publicSans(
+      bodyLarge: GoogleFonts.plusJakartaSans(
         textStyle: baseTextTheme.bodyLarge,
-        color: textPrimary,
+        color: AppColors.textPrimary,
       ),
-      bodyMedium: GoogleFonts.publicSans(
+      bodyMedium: GoogleFonts.plusJakartaSans(
         textStyle: baseTextTheme.bodyMedium,
-        color: textPrimary,
+        color: AppColors.textPrimary,
       ),
-      bodySmall: GoogleFonts.publicSans(
+      bodySmall: GoogleFonts.plusJakartaSans(
         textStyle: baseTextTheme.bodySmall,
-        color: textSecondary,
+        color: AppColors.textSecondary,
       ),
-      labelLarge: GoogleFonts.publicSans(
+      labelLarge: GoogleFonts.plusJakartaSans(
         textStyle: baseTextTheme.labelLarge,
-        color: textPrimary,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
       ),
-      labelMedium: GoogleFonts.publicSans(
+      labelMedium: GoogleFonts.plusJakartaSans(
         textStyle: baseTextTheme.labelMedium,
-        color: textSecondary,
+        color: AppColors.textSecondary,
       ),
-      labelSmall: GoogleFonts.publicSans(
+      labelSmall: GoogleFonts.plusJakartaSans(
         textStyle: baseTextTheme.labelSmall,
-        color: textSecondary,
+        color: AppColors.textMuted,
       ),
     );
 
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.light(
-        primary: primaryColor,
-        secondary: primaryColor.withAlpha(204),
-        surface: surfaceColor,
-        error: errorColor,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
-        onSurface: textPrimary,
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.primary,
+        secondary: AppColors.secondary,
+        surface: AppColors.surface,
+        error: AppColors.statusRed,
+        onPrimary: AppColors.onPrimary,
+        onSecondary: AppColors.onSecondary,
+        onSurface: AppColors.textPrimary,
         onError: Colors.white,
       ),
-      scaffoldBackgroundColor: backgroundColor,
+      scaffoldBackgroundColor: AppColors.background,
       textTheme: textTheme,
-      appBarTheme: AppBarTheme(
-        backgroundColor: surfaceColor,
-        foregroundColor: textPrimary,
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        centerTitle: true,
-        titleTextStyle: GoogleFonts.newsreader(
-          color: textPrimary,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
-        iconTheme: const IconThemeData(color: primaryColor),
+        centerTitle: false,
+        iconTheme: IconThemeData(color: AppColors.primary),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
-          foregroundColor: Colors.white,
-          textStyle: GoogleFonts.publicSans(fontWeight: FontWeight.w600),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.onPrimary,
+          minimumSize: const Size(48, 48),
+          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          minimumSize: const Size(48, 48),
+          side: const BorderSide(color: AppColors.border),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
       cardTheme: CardThemeData(
-        color: surfaceColor,
-        elevation: 2,
-        shadowColor: Colors.black.withAlpha(13),
+        color: AppColors.surface,
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.borderLight),
         ),
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
-        labelStyle: GoogleFonts.publicSans(color: textSecondary),
+        labelStyle: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary),
       ),
     );
   }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'sidebar_nav.dart';
-import 'bottom_nav.dart';
 
 class ResponsiveLayout extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -32,7 +31,6 @@ class ResponsiveLayout extends StatelessWidget {
 
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: BottomNav(navigationShell: navigationShell),
     );
   }
 }

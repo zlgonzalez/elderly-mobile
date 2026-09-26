@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MemoryBoxMicroserviceContract",
+  "description": "Endpoints and schemas for multi-format family memories",
+  "endpoints": {
+    "listMemories": {
+      "method": "GET",
+      "path": "/api/v1/residents/{residentId}/memories",
+      "response": {
+        "status": 200,
+        "body": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "format", "date", "sharedBy"],
+            "properties": {
+              "id": { "type": "string" },
+              "residentId": { "type": "string" },
+              "format": { "type": "string", "enum": ["photo", "story", "letter", "video"] },
+              "title": { "type": "string" },
+              "content": { "type": "string" },
+              "mediaUrl": { "type": "string" },
+              "date": { "type": "string", "format": "date-time" },
+              "sharedBy": { "type": "string" },
+              "tags": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "createMemory": {
+      "method": "POST",
+      "path": "/api/v1/residents/{residentId}/memories",
+      "request": {
+        "type": "object",
+        "required": ["title", "format", "date", "sharedBy"],
+        "properties": {
+          "format": { "type": "string", "enum": ["photo", "story", "letter", "video"] },
+          "title": { "type": "string" },
+          "content": { "type": "string" },
+          "mediaUrl": { "type": "string" },
+          "date": { "type": "string" },
+          "sharedBy": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

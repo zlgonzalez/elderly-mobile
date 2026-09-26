@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MealTrackerMicroserviceContract",
+  "description": "Endpoints and schemas for meals and 35+ item food reference library",
+  "endpoints": {
+    "listFoodLibrary": {
+      "method": "GET",
+      "path": "/api/v1/foods/library",
+      "response": {
+        "status": 200,
+        "body": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "portion", "calories", "protein", "carbs", "fat"],
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "portion": { "type": "string" },
+              "calories": { "type": "integer" },
+              "protein": { "type": "integer" },
+              "carbs": { "type": "integer" },
+              "fat": { "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    "getDailyMeals": {
+      "method": "GET",
+      "path": "/api/v1/residents/{residentId}/meals/today",
+      "response": {
+        "status": 200,
+        "body": {
+          "type": "object",
+          "properties": {
+            "meals": { "type": "array" },
+            "targets": {
+              "type": "object",
+              "properties": {
+                "calories": { "type": "integer" },
+                "protein": { "type": "integer" },
+                "carbs": { "type": "integer" },
+                "fat": { "type": "integer" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "logMeal": {
+      "method": "POST",
+      "path": "/api/v1/residents/{residentId}/meals",
+      "request": {
+        "type": "object",
+        "required": ["mealType", "items", "expectedIntakePercent", "actualIntakePercent"],
+        "properties": {
+          "mealType": { "type": "string", "enum": ["breakfast", "lunch", "dinner", "snack"] },
+          "items": { "type": "array" },
+          "expectedIntakePercent": { "type": "integer" },
+          "actualIntakePercent": { "type": "integer" },
+          "observations": { "type": "string" },
+          "recordedBy": { "type": "string" }
+        }
+      }
+    }
+  }
+}
