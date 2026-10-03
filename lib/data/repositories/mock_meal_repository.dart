@@ -107,4 +107,33 @@ class MockMealRepository implements MealRepository {
     list.insert(0, newMeal);
     return newMeal;
   }
+
+  @override
+  Future<NutritionTargets> getNutritionTargets(String residentId) async {
+    final clean = residentId.toLowerCase();
+    if (clean.contains('robert') || clean == '062510e3-b81a-4421-9576-56c72ff29f18') {
+      return const NutritionTargets(
+        calories: 1650,
+        protein: 75,
+        carbs: 160,
+        fat: 50,
+        fluidMl: 2000,
+      );
+    } else if (clean.contains('dorothy') || clean == 'd5eade63-7af6-457e-99ff-befcdd201ac8') {
+      return const NutritionTargets(
+        calories: 1700,
+        protein: 60,
+        carbs: 210,
+        fat: 50,
+        fluidMl: 1750,
+      );
+    }
+    return const NutritionTargets(
+      calories: 1800,
+      protein: 65,
+      carbs: 220,
+      fat: 55,
+      fluidMl: 1800,
+    );
+  }
 }

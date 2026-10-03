@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/config/app_config.dart';
+import '../../core/network/api_client.dart';
 import '../../domain/entities/care_task.dart';
+import 'http_care_tasks_repository.dart';
 import 'mock_care_tasks_repository.dart';
 
-// [MICROSERVICE_INTEGRATION_POINT]: CareService - Tasks API
-// Contract: GET /api/v1/residents/{residentId}/tasks
-// Contract: POST /api/v1/residents/{residentId}/tasks
-// Contract: PATCH /api/v1/residents/{residentId}/tasks/{taskId}/status
+// [MICROSERVICE_INTEGRATION_POINT]: ActivityService - Activities & Tasks API
+// Contract: GET /api/v1/activities/agenda/today?patient_id={uuid}
+// Contract: GET /api/v1/family/feed?patient_id={uuid}
+// Contract: PATCH /api/v1/activities/{taskId}/status
 abstract class CareTasksRepository {
   Future<List<CareTask>> getTasks(String residentId);
   Future<CareTask> createTask(String residentId, CareTask task);
@@ -19,6 +22,9 @@ abstract class CareTasksRepository {
 }
 
 final careTasksRepositoryProvider = Provider<CareTasksRepository>((ref) {
-  // In production, when USE_MOCK_DATA is false, connect to real microservice
-  return MockCareTasksRepository();
+  final config = ref.watch(appConfigProvider);
+  if (config.useMockData) {
+    return MockCareTasksRepository();
+  }
+  return HttpCareTasksRepository(apiClient: ref.watch(apiClientProvider));
 });

@@ -4,20 +4,6 @@ import '../../data/repositories/mock_meal_repository.dart';
 import '../../domain/entities/meal_log.dart';
 import '../family_portal/resident_provider.dart';
 
-class NutritionTargets {
-  final int calories;
-  final int protein;
-  final int carbs;
-  final int fat;
-
-  const NutritionTargets({
-    this.calories = 1800,
-    this.protein = 65,
-    this.carbs = 220,
-    this.fat = 55,
-  });
-}
-
 class MealTrackerState {
   final List<MealLog> todayMeals;
   final List<FoodItem> foodLibrary;
@@ -79,9 +65,11 @@ class MealTrackerNotifier extends StateNotifier<MealTrackerState> {
     state = state.copyWith(isLoading: true);
     final library = await _repository.getFoodLibrary();
     final meals = await _repository.getTodayMeals(_residentId);
+    final targets = await _repository.getNutritionTargets(_residentId);
     state = state.copyWith(
       foodLibrary: library,
       todayMeals: meals,
+      targets: targets,
       isLoading: false,
     );
   }

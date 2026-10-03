@@ -72,13 +72,18 @@ class ResidentSwitchModal extends ConsumerWidget {
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: AppColors.primaryLight,
-                  child: Text(
-                    res.name.substring(0, 1),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  backgroundImage: (res.avatarUrl.isNotEmpty && res.avatarUrl.startsWith('http'))
+                      ? NetworkImage(res.avatarUrl)
+                      : null,
+                  child: (res.avatarUrl.isEmpty || !res.avatarUrl.startsWith('http'))
+                      ? Text(
+                          res.name.substring(0, 1),
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
                 ),
                 title: Text(
                   res.name,

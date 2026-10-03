@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/config/app_config.dart';
+import '../../core/network/api_client.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/http_auth_repository.dart';
 import '../../data/repositories/mock_auth_repository.dart';
 
 class AuthState {
@@ -31,7 +34,11 @@ class AuthState {
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return MockAuthRepository();
+  final config = ref.watch(appConfigProvider);
+  if (config.useMockData) {
+    return MockAuthRepository();
+  }
+  return HttpAuthRepository(apiClient: ref.watch(apiClientProvider));
 });
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -68,6 +75,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<List<DemoAccount>> getDemoAccounts() async {
+    return _repository.getDemoAccounts();
+  }
+
   Future<void> logout() async {
     await _repository.logout();
     state = const AuthState();
@@ -77,4 +88,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final repo = ref.watch(authRepositoryProvider);
   return AuthNotifier(repo);
+});
+
+final demoAccountsProvider = FutureProvider<List<DemoAccount>>((ref) async {
+  final repo = ref.watch(authRepositoryProvider);
+  return repo.getDemoAccounts();
 });

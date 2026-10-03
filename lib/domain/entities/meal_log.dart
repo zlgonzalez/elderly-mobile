@@ -169,3 +169,39 @@ class MealLog {
     );
   }
 }
+
+class NutritionTargets {
+  final int calories;
+  final int protein;
+  final int carbs;
+  final int fat;
+  final int fluidMl;
+
+  const NutritionTargets({
+    this.calories = 1800,
+    this.protein = 65,
+    this.carbs = 220,
+    this.fat = 55,
+    this.fluidMl = 1800,
+  });
+
+  factory NutritionTargets.fromJson(Map<String, dynamic> json) {
+    return NutritionTargets(
+      calories: (json['calories'] as num?)?.toInt() ?? (json['target_calories'] as num?)?.toInt() ?? 1800,
+      protein: (json['protein_g'] as num?)?.toInt() ?? (json['protein'] as num?)?.toInt() ?? (json['target_protein_g'] as num?)?.toInt() ?? 65,
+      carbs: (json['carbs_g'] as num?)?.toInt() ?? (json['carbs'] as num?)?.toInt() ?? (json['target_carbs_g'] as num?)?.toInt() ?? 220,
+      fat: (json['fat_g'] as num?)?.toInt() ?? (json['fat'] as num?)?.toInt() ?? (json['target_fat_g'] as num?)?.toInt() ?? 55,
+      fluidMl: (json['fluid_ml'] as num?)?.toInt() ?? (json['target_fluid_ml'] as num?)?.toInt() ?? 1800,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'calories': calories,
+      'protein': protein,
+      'carbs': carbs,
+      'fat': fat,
+      'fluid_ml': fluidMl,
+    };
+  }
+}

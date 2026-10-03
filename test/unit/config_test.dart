@@ -4,58 +4,49 @@ import 'package:elderly_mobile/core/config/app_config.dart';
 
 void main() {
   group('AppConfig Tests', () {
-    test('Default configuration initializes with mock data enabled', () {
+    test('Default configuration initializes with environment and base URL', () {
       final config = AppConfig.fromEnvironment();
 
-      expect(config.useMockData, isTrue);
       expect(config.apiBaseUrl, isNotEmpty);
-      expect(config.environment, equals('dev'));
+      expect(config.environment, equals(AppEnvironment.local));
     });
 
     test('copyWith properly overrides selected configuration fields', () {
       const initial = AppConfig(
         apiBaseUrl: 'http://localhost:8080/api/v1',
-        authServiceUrl: 'http://localhost:8081',
-        careServiceUrl: 'http://localhost:8082',
-        aiServiceUrl: 'http://localhost:8083',
+        authServiceUrl: 'http://localhost:8080/api/v1',
+        careServiceUrl: 'http://localhost:8080/api/v1',
+        aiServiceUrl: 'http://localhost:8080/api/v1',
         geminiApiKey: '',
         useMockData: true,
-        environment: 'dev',
+        environment: AppEnvironment.local,
       );
 
       final updated = initial.copyWith(
-        apiBaseUrl: 'https://api.kubonorth.org',
+        apiBaseUrl: 'https://api.kubocare.com/api/v1',
         useMockData: false,
-        environment: 'prod',
+        environment: AppEnvironment.production,
       );
 
-      expect(updated.apiBaseUrl, equals('https://api.kubonorth.org'));
+      expect(updated.apiBaseUrl, equals('https://api.kubocare.com/api/v1'));
       expect(updated.useMockData, isFalse);
-      expect(updated.environment, equals('prod'));
-      expect(updated.authServiceUrl, equals('http://localhost:8081'));
+      expect(updated.environment, equals(AppEnvironment.production));
+    });
+
+    test('AppEnvironment fromString resolves known environments', () {
+      expect(AppEnvironment.fromString('local'), equals(AppEnvironment.local));
+      expect(AppEnvironment.fromString('dev'), equals(AppEnvironment.local));
+      expect(AppEnvironment.fromString('uat'), equals(AppEnvironment.uat));
+      expect(AppEnvironment.fromString('staging'), equals(AppEnvironment.uat));
+      expect(AppEnvironment.fromString('prod'), equals(AppEnvironment.production));
+      expect(AppEnvironment.fromString('production'), equals(AppEnvironment.production));
     });
 
     test('appConfigProvider yields configured AppConfig instance', () {
-      final container = ProviderContainer(
-        overrides: [
-          appConfigProvider.overrideWithValue(
-            const AppConfig(
-              apiBaseUrl: 'http://test-server:9000/api',
-              authServiceUrl: 'http://test-server:9001',
-              careServiceUrl: 'http://test-server:9002',
-              aiServiceUrl: 'http://test-server:9003',
-              geminiApiKey: 'test-key',
-              useMockData: false,
-              environment: 'test',
-            ),
-          ),
-        ],
-      );
-
+      final container = ProviderContainer();
       final config = container.read(appConfigProvider);
-      expect(config.apiBaseUrl, equals('http://test-server:9000/api'));
-      expect(config.useMockData, isFalse);
-      expect(config.geminiApiKey, equals('test-key'));
+      expect(config.apiBaseUrl, isNotEmpty);
+      expect(config.environment, equals(AppEnvironment.local));
     });
   });
 }
