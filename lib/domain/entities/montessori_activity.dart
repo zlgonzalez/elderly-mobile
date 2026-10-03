@@ -67,15 +67,17 @@ class MontessoriActivity {
 
   factory MontessoriActivity.fromJson(Map<String, dynamic> json) {
     return MontessoriActivity(
-      id: json['id'] as String,
-      title: json['title'] as String,
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
       category: MontessoriCategory.fromString(json['category'] as String? ?? 'practicalLife'),
       summary: json['summary'] as String? ?? '',
-      durationMinutes: json['durationMinutes'] as int? ?? 15,
+      durationMinutes: (json['durationMinutes'] as num?)?.toInt() ??
+          (json['duration_minutes'] as num?)?.toInt() ??
+          15,
       materials: (json['materials'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      whyItMatters: json['whyItMatters'] as String? ?? '',
+      whyItMatters: json['whyItMatters'] as String? ?? json['why_it_matters'] as String? ?? '',
       steps: (json['steps'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      dignityTip: json['dignityTip'] as String?,
+      dignityTip: json['dignityTip'] as String? ?? json['dignity_tip'] as String?,
     );
   }
 }

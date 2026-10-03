@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/memory_item.dart';
 import '../../auth/auth_provider.dart';
@@ -27,28 +28,24 @@ class _AddMemorySheetState extends ConsumerState<AddMemorySheet> {
 
   final List<Map<String, String>> _presetPhotos = [
     {
-      'label': 'Family gathering',
-      'url': 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800',
+      'label': 'Wedding & Family',
+      'url': '/api/v1/media/memories/wedding_1965.png',
     },
     {
-      'label': 'Garden',
-      'url': 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=800',
+      'label': 'Garden & Courtyard',
+      'url': '/api/v1/media/memories/garden_bloom.png',
     },
     {
-      'label': 'Celebration',
-      'url': 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800',
+      'label': 'Teaching & Mentorship',
+      'url': '/api/v1/media/memories/teaching_1968.png',
     },
     {
-      'label': 'Wedding',
-      'url': 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800',
+      'label': 'Autumn Nature Walk',
+      'url': '/api/v1/media/memories/autumn_walk.png',
     },
     {
-      'label': 'Family',
-      'url': 'https://images.unsplash.com/photo-1543807535-eceef0bc6599?w=800',
-    },
-    {
-      'label': 'Nature',
-      'url': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800',
+      'label': 'Letters & Keepsakes',
+      'url': '/api/v1/media/memories/story_letter.png',
     },
   ];
 
@@ -275,7 +272,7 @@ class _AddMemorySheetState extends ConsumerState<AddMemorySheet> {
                               fit: StackFit.expand,
                               children: [
                                 Image.network(
-                                  item['url']!,
+                                  ref.read(apiClientProvider).resolveMediaUrl(item['url']!),
                                   fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) => const Icon(Icons.image, color: AppColors.primary),
                                 ),

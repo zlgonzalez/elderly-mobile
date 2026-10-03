@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/memory_item.dart';
-import 'mock_memory_repository.dart';
+import '../../core/network/api_client.dart';
+import 'http_memory_repository.dart';
 
 // [MICROSERVICE_INTEGRATION_POINT]: MemoryService - List/Create Memories
-// Contract: GET /api/v1/residents/{residentId}/memories
-// Contract: POST /api/v1/residents/{residentId}/memories
+// Contract: GET /api/v1/memories?patient_id={uuid}
+// Contract: POST /api/v1/memories
+// Contract: DELETE /api/v1/memories/{id}
 abstract class MemoryRepository {
   Future<List<MemoryItem>> getMemories(String residentId);
   Future<MemoryItem> createMemory(String residentId, MemoryItem memory);
@@ -12,6 +14,6 @@ abstract class MemoryRepository {
 }
 
 final memoryRepositoryProvider = Provider<MemoryRepository>((ref) {
-  // In production, when USE_MOCK_DATA is false, connect to real microservice
-  return MockMemoryRepository();
+  final apiClient = ref.watch(apiClientProvider);
+  return HttpMemoryRepository(apiClient: apiClient);
 });

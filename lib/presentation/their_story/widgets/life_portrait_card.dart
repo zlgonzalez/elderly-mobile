@@ -24,14 +24,19 @@ class LifePortraitCard extends StatelessWidget {
               CircleAvatar(
                 radius: 30,
                 backgroundColor: AppColors.surfaceVariant,
-                child: Text(
-                  resident.name.substring(0, 1),
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
+                backgroundImage: (resident.avatarUrl.isNotEmpty && resident.avatarUrl.startsWith('http'))
+                    ? NetworkImage(resident.avatarUrl)
+                    : null,
+                child: (resident.avatarUrl.isEmpty || !resident.avatarUrl.startsWith('http'))
+                    ? Text(
+                        resident.name.substring(0, 1),
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(width: 16),
               Expanded(

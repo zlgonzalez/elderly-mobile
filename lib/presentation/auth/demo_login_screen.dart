@@ -67,57 +67,74 @@ class DemoLoginScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  // Margaret's family card
-                  _buildProfileCard(
-                    context: context,
-                    residentName: "Margaret's family",
-                    username: 'sarah.thompson',
-                    details: 'Sarah Thompson (Daughter) · Margaret (Age 82)',
-                    tag: 'Primary Demo',
-                    onTap: () async {
-                      ref.read(residentProvider.notifier).selectById('res_margaret');
-                      final success = await ref
-                          .read(authProvider.notifier)
-                          .selectDemoProfile('user_sarah');
-                      if (success && context.mounted) {
-                        context.go('/portal');
-                      }
-                    },
-                  ),
+                  // Dynamic Demo Accounts from Microservice
+                  ref.watch(demoAccountsProvider).when(
+                        data: (accounts) {
+                          // Display family accounts first, then caregiver
+                          return Column(
+                            children: accounts.map((acc) {
+                              final title = acc.role == 'caregiver'
+                                  ? "${acc.fullName} (${acc.relation})"
+                                  : "${acc.residentName.split(' ').first}'s family";
+                              final details = acc.role == 'caregiver'
+                                  ? "${acc.fullName} · Visiting Caregiver"
+                                  : "${acc.fullName} (${acc.relation}) · ${acc.residentName.split(' ').first} (Age ${acc.residentAge})";
 
-                  // Robert's family card
-                  _buildProfileCard(
-                    context: context,
-                    residentName: "Robert's family",
-                    username: 'lisa.chen',
-                    details: 'Lisa Chen (Daughter) · Robert (Age 79)',
-                    onTap: () async {
-                      ref.read(residentProvider.notifier).selectById('res_robert');
-                      final success = await ref
-                          .read(authProvider.notifier)
-                          .selectDemoProfile('user_lisa');
-                      if (success && context.mounted) {
-                        context.go('/portal');
-                      }
-                    },
-                  ),
-
-                  // Dorothy's family card
-                  _buildProfileCard(
-                    context: context,
-                    residentName: "Dorothy's family",
-                    username: 'james.williams',
-                    details: 'James Williams (Son) · Dorothy (Age 85)',
-                    onTap: () async {
-                      ref.read(residentProvider.notifier).selectById('res_dorothy');
-                      final success = await ref
-                          .read(authProvider.notifier)
-                          .selectDemoProfile('user_james');
-                      if (success && context.mounted) {
-                        context.go('/portal');
-                      }
-                    },
-                  ),
+                              return _buildProfileCard(
+                                context: context,
+                                residentName: title,
+                                username: acc.username,
+                                details: details,
+                                avatarUrl: acc.avatarUrl,
+                                tag: acc.tag,
+                                onTap: () async {
+                                  final success = await ref
+                                      .read(authProvider.notifier)
+                                      .selectDemoProfile(acc.id);
+                                  if (success) {
+                                    await ref
+                                        .read(residentProvider.notifier)
+                                        .selectById(acc.linkedResidentId);
+                                    if (context.mounted) {
+                                      context.go('/portal');
+                                    }
+                                  }
+                                },
+                              );
+                            }).toList(),
+                          );
+                        },
+                        loading: () => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(24.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        error: (_, __) => Column(
+                          children: [
+                            _buildProfileCard(
+                              context: context,
+                              residentName: "Margaret's family",
+                              username: 'sarah.thompson',
+                              details: 'Sarah Thompson (Daughter) · Margaret (Age 82)',
+                              tag: 'Primary Demo',
+                              onTap: () async {
+                                final success = await ref
+                                    .read(authProvider.notifier)
+                                    .selectDemoProfile('user_sarah');
+                                if (success) {
+                                  await ref
+                                      .read(residentProvider.notifier)
+                                      .selectById('res_margaret');
+                                  if (context.mounted) {
+                                    context.go('/portal');
+                                  }
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
 
                   const SizedBox(height: 20),
                   if (authState.isLoading)
@@ -143,6 +160,7 @@ class DemoLoginScreen extends ConsumerWidget {
     required String residentName,
     required String username,
     required String details,
+    String? avatarUrl,
     String? tag,
     required VoidCallback onTap,
   }) {
@@ -172,14 +190,23 @@ class DemoLoginScreen extends ConsumerWidget {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: AppColors.surfaceVariant,
-                  child: Text(
-                    residentName.substring(0, 1),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  backgroundImage: (avatarUrl != null &&
+                          avatarUrl.isNotEmpty &&
+                          avatarUrl.startsWith('http'))
+                      ? NetworkImage(avatarUrl)
+                      : null,
+                  child: (avatarUrl == null ||
+                          avatarUrl.isEmpty ||
+                          !avatarUrl.startsWith('http'))
+                      ? Text(
+                          residentName.substring(0, 1),
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 14),
                 Expanded(

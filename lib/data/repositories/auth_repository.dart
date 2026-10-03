@@ -7,6 +7,9 @@ abstract class AuthRepository {
   // [MICROSERVICE_INTEGRATION_POINT]: AuthService - POST /api/v1/auth/demo-switch
   Future<UserProfile> selectDemoProfile(String profileId);
 
+  // [MICROSERVICE_INTEGRATION_POINT]: AuthService - GET /api/v1/auth/demo-accounts
+  Future<List<DemoAccount>> getDemoAccounts();
+
   // [MICROSERVICE_INTEGRATION_POINT]: AuthService - POST /api/v1/auth/logout
   Future<void> logout();
 

@@ -7,7 +7,7 @@ class ResidentFixtures {
     id: 'res_margaret',
     name: 'Margaret Thompson',
     age: 82,
-    avatarUrl: 'assets/images/margaret.png',
+    avatarUrl: '/api/v1/media/avatars/margaret.png',
     biography: 'Elementary School Teacher (35 years)\nBurlington, Vermont',
     quote: 'Every child is a garden waiting to bloom. You just have to believe in what you cannot yet see.',
     education: 'B.Ed., University of Vermont, 1965',
@@ -66,7 +66,7 @@ class ResidentFixtures {
     id: 'res_robert',
     name: 'Robert Chen',
     age: 79,
-    avatarUrl: 'assets/images/robert.png',
+    avatarUrl: '/api/v1/media/avatars/robert.png',
     biography: 'Civil Engineer (40 years)\nSan Francisco, California',
     quote: 'Good foundations make bridges that outlast generations.',
     education: 'B.S. Civil Engineering, UC Berkeley, 1968',
@@ -108,7 +108,7 @@ class ResidentFixtures {
     id: 'res_dorothy',
     name: 'Dorothy Williams',
     age: 85,
-    avatarUrl: 'assets/images/dorothy.png',
+    avatarUrl: '/api/v1/media/avatars/dorothy.png',
     biography: 'Librarian & Pianist\nChicago, Illinois',
     quote: 'Stories are where we keep what we cannot afford to lose.',
     education: 'M.L.I.S., University of Illinois, 1963',
@@ -146,6 +146,26 @@ class ResidentFixtures {
     ],
   );
 
+  static const Map<String, String> residentIdToBackendUuid = {
+    'res_margaret': '3b471508-d528-4cfb-a9e0-4ac4b06eeec9',
+    'res_robert': '062510e3-b81a-4421-9576-56c72ff29f18',
+    'res_dorothy': 'd5eade63-7af6-457e-99ff-befcdd201ac8',
+  };
+
+  static const Map<String, String> backendUuidToResidentId = {
+    '3b471508-d528-4cfb-a9e0-4ac4b06eeec9': 'res_margaret',
+    '062510e3-b81a-4421-9576-56c72ff29f18': 'res_robert',
+    'd5eade63-7af6-457e-99ff-befcdd201ac8': 'res_dorothy',
+  };
+
+  static String toBackendUuid(String id) {
+    return residentIdToBackendUuid[id] ?? id;
+  }
+
+  static String toFixtureId(String uuid) {
+    return backendUuidToResidentId[uuid] ?? uuid;
+  }
+
   static List<Resident> get allResidents => [
     margaretThompson,
     robertChen,
@@ -153,8 +173,9 @@ class ResidentFixtures {
   ];
 
   static Resident findById(String id) {
+    final fixtureId = backendUuidToResidentId[id] ?? id;
     return allResidents.firstWhere(
-      (r) => r.id == id,
+      (r) => r.id == fixtureId || r.id == id,
       orElse: () => margaretThompson,
     );
   }

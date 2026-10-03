@@ -1,14 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/config/app_config.dart';
-import 'mock_ai_assistant_repository.dart';
+import '../../core/network/api_client.dart';
+import 'http_ai_assistant_repository.dart';
 
 // [MICROSERVICE_INTEGRATION_POINT]: AiService - Streaming/Query API
 // Endpoints:
-// - POST /api/v1/ai/chat/stream
-// - POST /api/v1/ai/chat/completions
+// - POST /api/v1/ai/chat
+// - GET /api/v1/ai/prompt-suggestions
 // Contract:
-// Request: { "prompt": string, "residentContext": string, "screenContext": string }
-// Response: Server-sent event stream (SSE) or JSON completion with elder-care/Montessori guidance.
+// Request: { "patient_id": uuid, "message": string }
+// Response: { "reply": string, "suggestions": string[] }
 abstract class AiAssistantRepository {
   Stream<String> streamResponse(
     String prompt, {
@@ -24,6 +24,6 @@ abstract class AiAssistantRepository {
 }
 
 final aiAssistantRepositoryProvider = Provider<AiAssistantRepository>((ref) {
-  final config = ref.watch(appConfigProvider);
-  return MockAiAssistantRepository(apiKey: config.geminiApiKey);
+  final apiClient = ref.watch(apiClientProvider);
+  return HttpAiAssistantRepository(apiClient: apiClient);
 });

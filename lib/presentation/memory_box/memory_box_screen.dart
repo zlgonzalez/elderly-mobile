@@ -48,7 +48,9 @@ class MemoryBoxScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (memory.mediaUrl != null && memory.mediaUrl!.isNotEmpty) ...[
+              if (memory.mediaUrl != null &&
+                  memory.mediaUrl!.isNotEmpty &&
+                  memory.mediaUrl!.startsWith('http')) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
@@ -259,7 +261,9 @@ class MemoryBoxScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (memory.mediaUrl != null && memory.mediaUrl!.isNotEmpty)
+            if (memory.mediaUrl != null &&
+                memory.mediaUrl!.isNotEmpty &&
+                memory.mediaUrl!.startsWith('http'))
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: Image.network(
