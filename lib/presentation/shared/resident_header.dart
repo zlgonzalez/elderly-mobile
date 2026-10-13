@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../family_portal/resident_provider.dart';
 import 'resident_switch_modal.dart';
+import 'server_settings_modal.dart';
 import 'middle_tab_selector.dart';
 
 class ResidentHeader extends ConsumerWidget {
@@ -57,7 +58,8 @@ class ResidentHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resident = ref.watch(residentProvider);
-    final contact = resident.contacts.isNotEmpty ? resident.contacts.first : null;
+    final contact =
+        resident.contacts.isNotEmpty ? resident.contacts.first : null;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -85,7 +87,8 @@ class ResidentHeader extends ConsumerWidget {
                       ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
@@ -123,7 +126,8 @@ class ResidentHeader extends ConsumerWidget {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
                               color: AppColors.surfaceContainerHigh,
                               borderRadius: BorderRadius.circular(8),
@@ -152,24 +156,46 @@ class ResidentHeader extends ConsumerWidget {
                     ],
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: () => ResidentSwitchModal.show(context),
-                  icon: const Icon(Icons.swap_horiz, size: 18, color: AppColors.primary),
-                  label: const Text(
-                    'Switch',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => ResidentSwitchModal.show(context),
+                      icon: const Icon(Icons.swap_horiz,
+                          size: 18, color: AppColors.primary),
+                      label: const Text(
+                        'Switch',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        backgroundColor: AppColors.surfaceVariant,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        minimumSize: const Size(48, 40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                     ),
-                  ),
-                  style: TextButton.styleFrom(
-                    backgroundColor: AppColors.surfaceVariant,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    minimumSize: const Size(48, 40),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      key: const Key('header_settings_button'),
+                      onPressed: () => ServerSettingsModal.show(context),
+                      icon: const Icon(Icons.settings_outlined,
+                          size: 20, color: AppColors.primary),
+                      tooltip: 'Server Settings',
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.surfaceVariant,
+                        minimumSize: const Size(40, 40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),

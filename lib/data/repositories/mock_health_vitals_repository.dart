@@ -1,4 +1,5 @@
 import '../../domain/entities/vital_sign.dart';
+import '../fixtures/resident_fixtures.dart';
 import 'health_vitals_repository.dart';
 
 // [MICROSERVICE_INTEGRATION_POINT]: HealthService - Mock Implementation
@@ -79,15 +80,17 @@ class MockHealthVitalsRepository implements HealthVitalsRepository {
 
   @override
   Future<List<VitalSign>> getVitals(String residentId) async {
-    return List.from(_store[residentId] ?? []);
+    final key = ResidentFixtures.toFixtureId(residentId);
+    return List.from(_store[key] ?? _store[residentId] ?? []);
   }
 
   @override
   Future<VitalSign> recordVitals(String residentId, VitalSign vitals) async {
-    final list = _store.putIfAbsent(residentId, () => []);
+    final key = ResidentFixtures.toFixtureId(residentId);
+    final list = _store.putIfAbsent(key, () => []);
     final newVital = vitals.copyWith(
       id: vitals.id.isEmpty ? 'vit_${DateTime.now().millisecondsSinceEpoch}' : vitals.id,
-      residentId: residentId,
+      residentId: key,
     );
     list.insert(0, newVital);
     return newVital;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../data/fixtures/resident_fixtures.dart';
+import '../../../domain/entities/resident.dart';
 import '../../../domain/entities/vital_sign.dart';
 import '../../auth/auth_provider.dart';
 import '../../family_portal/resident_provider.dart';
@@ -15,15 +17,17 @@ class RecordVitalsForm extends ConsumerStatefulWidget {
 
 class _RecordVitalsFormState extends ConsumerState<RecordVitalsForm> {
   final _formKey = GlobalKey<FormState>();
-  final _bpController = TextEditingController(text: '120/80');
-  final _hrController = TextEditingController(text: '72');
-  final _tempController = TextEditingController(text: '98.6');
-  final _weightController = TextEditingController(text: '138');
+  late final TextEditingController _bpController;
+  late final TextEditingController _hrController;
+  late final TextEditingController _tempController;
+  late final TextEditingController _weightController;
   final _notesController = TextEditingController();
   late final TextEditingController _recordedByController;
 
   String _mobilityLevel = 'Independent';
   double _painLevel = 0.0;
+  String? _populatedForResidentId;
+  String? _populatedVitalId;
 
   final List<String> _mobilityOptions = [
     'Independent',
@@ -37,6 +41,65 @@ class _RecordVitalsFormState extends ConsumerState<RecordVitalsForm> {
     super.initState();
     final user = ref.read(authProvider).user;
     _recordedByController = TextEditingController(text: user?.fullName ?? 'Nurse Jane');
+    _bpController = TextEditingController();
+    _hrController = TextEditingController();
+    _tempController = TextEditingController();
+    _weightController = TextEditingController();
+
+    final resident = ref.read(residentProvider);
+    final vitalsState = ref.read(healthVitalsProvider);
+    _applyVitalsToForm(resident.id, vitalsState.latest);
+  }
+
+  void _applyVitalsToForm(String residentId, VitalSign? latest) {
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    _populatedForResidentId = fixtureId;
+    _populatedVitalId = latest?.id;
+
+    if (latest != null && ResidentFixtures.toFixtureId(latest.residentId) == fixtureId) {
+      _bpController.text = latest.bloodPressure;
+      _hrController.text = latest.heartRate.toString();
+      _tempController.text = latest.temperature.toString();
+      if (latest.weight != null) {
+        final w = latest.weight!;
+        _weightController.text = w == w.roundToDouble() ? w.toInt().toString() : w.toString();
+      } else {
+        _weightController.text = '';
+      }
+      _mobilityLevel = (latest.mobilityLevel != null && _mobilityOptions.contains(latest.mobilityLevel))
+          ? latest.mobilityLevel!
+          : 'Independent';
+      _painLevel = latest.painLevel.toDouble().clamp(0.0, 10.0);
+      return;
+    }
+
+    switch (fixtureId) {
+      case 'res_robert':
+        _bpController.text = '130/85';
+        _hrController.text = '68';
+        _tempController.text = '98.4';
+        _weightController.text = '162';
+        _mobilityLevel = 'Assisted Walk';
+        _painLevel = 1.0;
+        break;
+      case 'res_dorothy':
+        _bpController.text = '118/75';
+        _hrController.text = '74';
+        _tempController.text = '98.2';
+        _weightController.text = '125';
+        _mobilityLevel = 'Independent';
+        _painLevel = 0.0;
+        break;
+      case 'res_margaret':
+      default:
+        _bpController.text = '120/80';
+        _hrController.text = '72';
+        _tempController.text = '98.6';
+        _weightController.text = '138';
+        _mobilityLevel = 'Independent';
+        _painLevel = 2.0;
+        break;
+    }
   }
 
   @override
@@ -50,7 +113,7 @@ class _RecordVitalsFormState extends ConsumerState<RecordVitalsForm> {
     super.dispose();
   }
 
-  void _submitVitals() {
+  Future<void> _submitVitals() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -70,8 +133,9 @@ class _RecordVitalsFormState extends ConsumerState<RecordVitalsForm> {
       clinicalNotes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
     );
 
-    ref.read(healthVitalsProvider.notifier).recordVitals(vital);
+    await ref.read(healthVitalsProvider.notifier).recordVitals(vital);
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Vital signs recorded (${vital.bloodPressure}, ${vital.heartRate} BPM) by ${vital.recordedBy}'),
@@ -82,6 +146,27 @@ class _RecordVitalsFormState extends ConsumerState<RecordVitalsForm> {
 
   @override
   Widget build(BuildContext context) {
+    final resident = ref.watch(residentProvider);
+    ref.listen<Resident>(residentProvider, (previous, next) {
+      final nextId = ResidentFixtures.toFixtureId(next.id);
+      if (_populatedForResidentId != nextId) {
+        _notesController.clear();
+        final latest = ref.read(healthVitalsProvider).latest;
+        setState(() {
+          _applyVitalsToForm(nextId, latest);
+        });
+      }
+    });
+
+    ref.listen<HealthVitalsState>(healthVitalsProvider, (previous, next) {
+      final latest = next.latest;
+      if (latest != null && latest.id != _populatedVitalId) {
+        setState(() {
+          _applyVitalsToForm(resident.id, latest);
+        });
+      }
+    });
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

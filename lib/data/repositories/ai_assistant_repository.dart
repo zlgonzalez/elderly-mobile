@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
 import 'http_ai_assistant_repository.dart';
+import 'mock_ai_assistant_repository.dart';
 
 // [MICROSERVICE_INTEGRATION_POINT]: AiService - Streaming/Query API
 // Endpoints:
@@ -24,6 +26,10 @@ abstract class AiAssistantRepository {
 }
 
 final aiAssistantRepositoryProvider = Provider<AiAssistantRepository>((ref) {
+  final config = ref.watch(appConfigProvider);
+  if (config.useMockData) {
+    return MockAiAssistantRepository();
+  }
   final apiClient = ref.watch(apiClientProvider);
   return HttpAiAssistantRepository(apiClient: apiClient);
 });

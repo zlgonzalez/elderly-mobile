@@ -44,7 +44,8 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _repository;
 
-  AuthNotifier(this._repository) : super(const AuthState());
+  AuthNotifier(this._repository, [AuthState? initialState])
+      : super(initialState ?? const AuthState());
 
   Future<bool> selectDemoProfile(String profileId) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
@@ -66,7 +67,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = state.copyWith(user: user, isLoading: false);
         return true;
       } else {
-        state = state.copyWith(isLoading: false, errorMessage: 'Invalid username or password');
+        state = state.copyWith(
+            isLoading: false, errorMessage: 'Invalid username or password');
         return false;
       }
     } catch (e) {
@@ -91,6 +93,7 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 });
 
 final demoAccountsProvider = FutureProvider<List<DemoAccount>>((ref) async {
+  ref.watch(appConfigProvider.select((c) => c.apiBaseUrl));
   final repo = ref.watch(authRepositoryProvider);
   return repo.getDemoAccounts();
 });

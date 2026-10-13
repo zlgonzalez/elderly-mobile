@@ -1,4 +1,5 @@
 import '../fixtures/food_fixtures.dart';
+import '../fixtures/resident_fixtures.dart';
 import '../../domain/entities/meal_log.dart';
 import 'meal_repository.dart';
 
@@ -88,21 +89,25 @@ class MockMealRepository implements MealRepository {
     return [...FoodFixtures.library, ..._customFoods];
   }
 
-  void addCustomFood(FoodItem food) {
+  @override
+  Future<FoodItem> addCustomFood(FoodItem food) async {
     _customFoods.add(food);
+    return food;
   }
 
   @override
   Future<List<MealLog>> getTodayMeals(String residentId) async {
-    return List.from(_store[residentId] ?? []);
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    return List.from(_store[fixtureId] ?? []);
   }
 
   @override
   Future<MealLog> logMeal(String residentId, MealLog meal) async {
-    final list = _store.putIfAbsent(residentId, () => []);
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    final list = _store.putIfAbsent(fixtureId, () => []);
     final newMeal = meal.copyWith(
       id: meal.id.isEmpty ? 'meal_${DateTime.now().millisecondsSinceEpoch}' : meal.id,
-      residentId: residentId,
+      residentId: fixtureId,
     );
     list.insert(0, newMeal);
     return newMeal;

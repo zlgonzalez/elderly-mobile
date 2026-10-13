@@ -39,7 +39,44 @@ class HttpMealRepository implements MealRepository {
   }
 
   @override
+  Future<FoodItem> addCustomFood(FoodItem food) async {
+    try {
+      final res = await _apiClient.post('/nutrition/foods', body: {
+        'name': food.name,
+        'category': food.category,
+        'calories': food.calories,
+        'protein_g': food.protein.toDouble(),
+        'carbs_g': food.carbs.toDouble(),
+        'fat_g': food.fat.toDouble(),
+        'fiber_g': 2.0,
+        'serving_size': 1.0,
+        'serving_unit': food.portion,
+      });
+      if (res is Map<String, dynamic>) {
+        final created = FoodItem(
+          id: res['id']?.toString() ?? food.id,
+          name: res['name']?.toString() ?? food.name,
+          portion: food.portion,
+          category: res['category']?.toString() ?? food.category,
+          calories: (res['calories'] as num?)?.toInt() ?? food.calories,
+          protein: (res['protein_g'] as num?)?.toInt() ?? food.protein,
+          carbs: (res['carbs_g'] as num?)?.toInt() ?? food.carbs,
+          fat: (res['fat_g'] as num?)?.toInt() ?? food.fat,
+        );
+        await _fallback.addCustomFood(created);
+        return created;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HttpMealRepository] addCustomFood network error: $e, using fallback');
+      }
+    }
+    return _fallback.addCustomFood(food);
+  }
+
+  @override
   Future<List<MealLog>> getTodayMeals(String residentId) async {
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
     final patientUuid = ResidentFixtures.toBackendUuid(residentId);
     try {
       final now = DateTime.now();
@@ -51,47 +88,50 @@ class HttpMealRepository implements MealRepository {
 
       if (res is Map<String, dynamic> && res['meals'] is List) {
         final mealsList = res['meals'] as List;
-        return mealsList.map((m) {
-          final map = m as Map<String, dynamic>;
-          final itemsList = (map['items'] as List?) ?? [];
-          final foodItems = itemsList.map((fi) {
-            final fMap = (fi['food'] as Map<String, dynamic>?) ?? {};
-            return FoodItem(
-              id: fMap['id']?.toString() ?? '',
-              name: fMap['name']?.toString() ?? '',
-              portion: '${fMap['serving_size'] ?? 1} ${fMap['serving_unit'] ?? 'serving'}',
-              category: fMap['category']?.toString() ?? 'General',
-              calories: (fMap['calories'] as num?)?.toInt() ?? 0,
-              protein: (fMap['protein_g'] as num?)?.toInt() ?? 0,
-              carbs: (fMap['carbs_g'] as num?)?.toInt() ?? 0,
-              fat: (fMap['fat_g'] as num?)?.toInt() ?? 0,
+        if (mealsList.isNotEmpty) {
+          return mealsList.map((m) {
+            final map = m as Map<String, dynamic>;
+            final itemsList = (map['items'] as List?) ?? [];
+            final foodItems = itemsList.map((fi) {
+              final fMap = (fi['food'] as Map<String, dynamic>?) ?? {};
+              return FoodItem(
+                id: fMap['id']?.toString() ?? '',
+                name: fMap['name']?.toString() ?? '',
+                portion: '${fMap['serving_size'] ?? 1} ${fMap['serving_unit'] ?? 'serving'}',
+                category: fMap['category']?.toString() ?? 'General',
+                calories: (fMap['calories'] as num?)?.toInt() ?? 0,
+                protein: (fMap['protein_g'] as num?)?.toInt() ?? 0,
+                carbs: (fMap['carbs_g'] as num?)?.toInt() ?? 0,
+                fat: (fMap['fat_g'] as num?)?.toInt() ?? 0,
+              );
+            }).toList();
+
+            return MealLog(
+              id: map['id']?.toString() ?? '',
+              residentId: fixtureId,
+              mealType: MealType.fromString(map['meal_type']?.toString() ?? 'breakfast'),
+              timestamp: map['timestamp'] != null
+                  ? DateTime.tryParse(map['timestamp'].toString()) ?? DateTime.now()
+                  : DateTime.now(),
+              items: foodItems,
+              actualIntakePercent: (map['intake_percentage'] as num?)?.toInt() ?? 100,
+              observations: map['notes']?.toString(),
+              recordedBy: map['recorded_by']?.toString() ?? 'Nurse Jane',
             );
           }).toList();
-
-          return MealLog(
-            id: map['id']?.toString() ?? '',
-            residentId: residentId,
-            mealType: MealType.fromString(map['meal_type']?.toString() ?? 'breakfast'),
-            timestamp: map['timestamp'] != null
-                ? DateTime.tryParse(map['timestamp'].toString()) ?? DateTime.now()
-                : DateTime.now(),
-            items: foodItems,
-            actualIntakePercent: (map['intake_percentage'] as num?)?.toInt() ?? 100,
-            observations: map['notes']?.toString(),
-            recordedBy: map['recorded_by']?.toString() ?? 'Nurse Jane',
-          );
-        }).toList();
+        }
       }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[HttpMealRepository] getTodayMeals network error: $e, using fallback');
       }
     }
-    return _fallback.getTodayMeals(residentId);
+    return _fallback.getTodayMeals(fixtureId);
   }
 
   @override
   Future<MealLog> logMeal(String residentId, MealLog meal) async {
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
     final patientUuid = ResidentFixtures.toBackendUuid(residentId);
     try {
       final body = {
@@ -120,14 +160,16 @@ class HttpMealRepository implements MealRepository {
       final res = await _apiClient.post('/nutrition/meals', body: body);
       if (res is Map<String, dynamic>) {
         final id = res['id']?.toString() ?? meal.id;
-        return meal.copyWith(id: id);
+        final created = meal.copyWith(id: id, residentId: fixtureId);
+        await _fallback.logMeal(fixtureId, created);
+        return created;
       }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[HttpMealRepository] logMeal network error: $e, using fallback');
       }
     }
-    return _fallback.logMeal(residentId, meal);
+    return _fallback.logMeal(fixtureId, meal);
   }
 
   @override

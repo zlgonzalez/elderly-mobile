@@ -1,4 +1,5 @@
 import '../../domain/entities/care_task.dart';
+import '../fixtures/resident_fixtures.dart';
 import 'care_tasks_repository.dart';
 
 // [MICROSERVICE_INTEGRATION_POINT]: CareService - Mock Implementation
@@ -72,17 +73,24 @@ class MockCareTasksRepository implements CareTasksRepository {
     _initDefaultTasks();
   }
 
+  void setTasks(String residentId, List<CareTask> tasks) {
+    final key = ResidentFixtures.toFixtureId(residentId);
+    _store[key] = List.from(tasks);
+  }
+
   @override
   Future<List<CareTask>> getTasks(String residentId) async {
-    return List.from(_store[residentId] ?? []);
+    final key = ResidentFixtures.toFixtureId(residentId);
+    return List.from(_store[key] ?? _store[residentId] ?? []);
   }
 
   @override
   Future<CareTask> createTask(String residentId, CareTask task) async {
-    final list = _store.putIfAbsent(residentId, () => []);
+    final key = ResidentFixtures.toFixtureId(residentId);
+    final list = _store.putIfAbsent(key, () => []);
     final newTask = task.copyWith(
       id: task.id.isEmpty ? 'task_${DateTime.now().millisecondsSinceEpoch}' : task.id,
-      residentId: residentId,
+      residentId: key,
     );
     list.add(newTask);
     return newTask;
@@ -96,21 +104,31 @@ class MockCareTasksRepository implements CareTasksRepository {
     String? completedBy,
     String? note,
   }) async {
-    final list = _store[residentId];
-    if (list == null) {
-      throw Exception('Resident tasks not found');
-    }
-    final index = list.indexWhere((t) => t.id == taskId);
-    if (index == -1) {
-      throw Exception('Task not found: $taskId');
+    final key = ResidentFixtures.toFixtureId(residentId);
+    final list = _store[key] ?? _store[residentId];
+    if (list != null) {
+      final index = list.indexWhere((t) => t.id == taskId);
+      if (index != -1) {
+        final updated = list[index].copyWith(
+          status: status,
+          completedBy: completedBy ?? list[index].completedBy,
+          completionNote: note ?? list[index].completionNote,
+        );
+        list[index] = updated;
+        return updated;
+      }
     }
 
-    final updated = list[index].copyWith(
+    return CareTask(
+      id: taskId,
+      residentId: key,
+      title: 'Care Task',
+      description: '',
+      time: '10:00 AM',
+      category: TaskCategory.activity,
       status: status,
-      completedBy: completedBy ?? list[index].completedBy,
-      completionNote: note ?? list[index].completionNote,
+      completedBy: completedBy,
+      completionNote: note,
     );
-    list[index] = updated;
-    return updated;
   }
 }

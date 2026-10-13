@@ -1,4 +1,5 @@
 import '../../domain/entities/mood_entry.dart';
+import '../fixtures/resident_fixtures.dart';
 import 'mood_repository.dart';
 
 // [MICROSERVICE_INTEGRATION_POINT]: MoodService - Mock Implementation
@@ -59,15 +60,17 @@ class MockMoodRepository implements MoodRepository {
 
   @override
   Future<List<MoodEntry>> getMoods(String residentId) async {
-    return List.from(_store[residentId] ?? []);
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    return List.from(_store[fixtureId] ?? []);
   }
 
   @override
   Future<MoodEntry> logMood(String residentId, MoodEntry mood) async {
-    final list = _store.putIfAbsent(residentId, () => []);
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    final list = _store.putIfAbsent(fixtureId, () => []);
     final newEntry = MoodEntry(
       id: mood.id.isEmpty ? 'mood_${DateTime.now().millisecondsSinceEpoch}' : mood.id,
-      residentId: residentId,
+      residentId: fixtureId,
       mood: mood.mood,
       timestamp: mood.timestamp,
       recordedBy: mood.recordedBy,

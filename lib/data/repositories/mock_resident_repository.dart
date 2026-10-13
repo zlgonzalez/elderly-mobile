@@ -12,7 +12,8 @@ class MockResidentRepository implements ResidentRepository {
   // TODO(microservice): Replace mock data with: final res = await apiClient.get('/api/v1/residents/$id');
   Future<Resident?> getResident(String id) async {
     await Future.delayed(const Duration(milliseconds: 100));
-    return _residents[id] ?? ResidentFixtures.margaretThompson;
+    final fixtureId = ResidentFixtures.toFixtureId(id);
+    return _residents[fixtureId] ?? _residents[id] ?? ResidentFixtures.findById(id);
   }
 
   @override
@@ -25,6 +26,7 @@ class MockResidentRepository implements ResidentRepository {
 
   @override
   Future<void> updateResident(Resident resident) async {
-    _residents[resident.id] = resident;
+    final fixtureId = ResidentFixtures.toFixtureId(resident.id);
+    _residents[fixtureId] = resident.copyWith(id: fixtureId);
   }
 }
