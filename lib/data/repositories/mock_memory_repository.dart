@@ -1,4 +1,5 @@
 import '../../domain/entities/memory_item.dart';
+import '../fixtures/resident_fixtures.dart';
 import 'memory_repository.dart';
 
 // [MICROSERVICE_INTEGRATION_POINT]: MemoryService - Mock Implementation
@@ -104,16 +105,18 @@ class MockMemoryRepository implements MemoryRepository {
 
   @override
   Future<List<MemoryItem>> getMemories(String residentId) async {
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
     // Return copies to avoid external mutation
-    return List.from(_store[residentId] ?? []);
+    return List.from(_store[fixtureId] ?? []);
   }
 
   @override
   Future<MemoryItem> createMemory(String residentId, MemoryItem memory) async {
-    final list = _store.putIfAbsent(residentId, () => []);
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    final list = _store.putIfAbsent(fixtureId, () => []);
     final newMemory = memory.copyWith(
       id: memory.id.isEmpty ? 'mem_${DateTime.now().millisecondsSinceEpoch}' : memory.id,
-      residentId: residentId,
+      residentId: fixtureId,
     );
     list.insert(0, newMemory);
     return newMemory;
@@ -121,7 +124,8 @@ class MockMemoryRepository implements MemoryRepository {
 
   @override
   Future<bool> deleteMemory(String residentId, String memoryId) async {
-    final list = _store[residentId];
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    final list = _store[fixtureId];
     if (list == null) return false;
     list.removeWhere((item) => item.id == memoryId);
     return true;

@@ -13,6 +13,7 @@ class HttpCareTasksRepository implements CareTasksRepository {
 
   @override
   Future<List<CareTask>> getTasks(String residentId) async {
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
     final patientUuid = ResidentFixtures.toBackendUuid(residentId);
     try {
       // 1. First try caregiver agenda today endpoint
@@ -22,7 +23,11 @@ class HttpCareTasksRepository implements CareTasksRepository {
       );
 
       if (agendaRes is List && agendaRes.isNotEmpty) {
-        return agendaRes.map((json) => _mapActivityItemToTask(json as Map<String, dynamic>, residentId)).toList();
+        final tasks = agendaRes
+            .map((json) => _mapActivityItemToTask(json as Map<String, dynamic>, fixtureId))
+            .toList();
+        _fallback.setTasks(fixtureId, tasks);
+        return tasks;
       }
     } catch (e) {
       if (kDebugMode) {
@@ -38,7 +43,11 @@ class HttpCareTasksRepository implements CareTasksRepository {
       );
 
       if (feedRes is List && feedRes.isNotEmpty) {
-        return feedRes.map((json) => _mapActivityItemToTask(json as Map<String, dynamic>, residentId)).toList();
+        final tasks = feedRes
+            .map((json) => _mapActivityItemToTask(json as Map<String, dynamic>, fixtureId))
+            .toList();
+        _fallback.setTasks(fixtureId, tasks);
+        return tasks;
       }
     } catch (e) {
       if (kDebugMode) {
@@ -47,12 +56,45 @@ class HttpCareTasksRepository implements CareTasksRepository {
     }
 
     // 3. Graceful fallback
-    return _fallback.getTasks(residentId);
+    return _fallback.getTasks(fixtureId);
   }
 
   @override
   Future<CareTask> createTask(String residentId, CareTask task) async {
-    return _fallback.createTask(residentId, task);
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    final patientUuid = ResidentFixtures.toBackendUuid(residentId);
+    try {
+      final area = task.category == TaskCategory.physical
+          ? 'Physical'
+          : task.category == TaskCategory.social
+              ? 'Social'
+              : task.category == TaskCategory.purposeful
+                  ? 'Cognitive'
+                  : 'Functional';
+      final res = await _apiClient.post(
+        '/activities/items',
+        body: {
+          'patient_id': patientUuid,
+          'title': task.title,
+          'description': task.description,
+          'montessori_area': area,
+          'goal': task.completionNote ?? task.description,
+        },
+      );
+      if (res is Map<String, dynamic>) {
+        final created = _mapActivityItemToTask(res, fixtureId).copyWith(
+          time: task.time,
+          category: task.category,
+        );
+        await _fallback.createTask(fixtureId, created);
+        return created;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HttpCareTasksRepository] createTask failed ($e), using local fallback');
+      }
+    }
+    return _fallback.createTask(fixtureId, task);
   }
 
   @override
@@ -63,6 +105,7 @@ class HttpCareTasksRepository implements CareTasksRepository {
     String? completedBy,
     String? note,
   }) async {
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
     // If taskId is a UUID, attempt updating backend activity item status
     final isUuid = taskId.contains('-');
     if (isUuid) {
@@ -73,10 +116,25 @@ class HttpCareTasksRepository implements CareTasksRepository {
                 ? 'missed'
                 : 'pending';
 
-        await _apiClient.patch(
+        final res = await _apiClient.patch(
           '/activities/$taskId/status',
           body: {'status': statusStr},
         );
+        if (res is Map<String, dynamic>) {
+          final mapped = _mapActivityItemToTask(res, fixtureId).copyWith(
+            status: status,
+            completedBy: completedBy,
+            completionNote: note,
+          );
+          await _fallback.updateTaskStatus(
+            residentId: fixtureId,
+            taskId: taskId,
+            status: status,
+            completedBy: completedBy,
+            note: note,
+          );
+          return mapped;
+        }
       } catch (e) {
         if (kDebugMode) {
           debugPrint('[HttpCareTasksRepository] updateStatus on backend failed: $e');
@@ -85,7 +143,7 @@ class HttpCareTasksRepository implements CareTasksRepository {
     }
 
     return _fallback.updateTaskStatus(
-      residentId: residentId,
+      residentId: fixtureId,
       taskId: taskId,
       status: status,
       completedBy: completedBy,

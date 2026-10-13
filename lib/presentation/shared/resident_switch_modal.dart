@@ -58,7 +58,8 @@ class ResidentSwitchModal extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
           ...allResidents.map((res) {
-            final isSelected = res.id == currentResident.id;
+            final isSelected = ResidentFixtures.toFixtureId(res.id) ==
+                ResidentFixtures.toFixtureId(currentResident.id);
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
@@ -95,6 +96,7 @@ class ResidentSwitchModal extends ConsumerWidget {
                     : null,
                 onTap: () {
                   ref.read(residentProvider.notifier).selectResident(res);
+                  ref.read(residentProvider.notifier).selectById(res.id);
                   Navigator.of(context).pop();
                 },
               ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/config/app_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../family_portal/resident_provider.dart';
+import '../shared/server_settings_modal.dart';
 import 'auth_provider.dart';
 
 class DemoLoginScreen extends ConsumerWidget {
@@ -11,6 +13,7 @@ class DemoLoginScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final appConfig = ref.watch(appConfigProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -24,7 +27,45 @@ class DemoLoginScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        key: const Key('demo_login_settings_button'),
+                        onPressed: () => ServerSettingsModal.show(context),
+                        icon: Icon(
+                          Icons.settings_outlined,
+                          size: 18,
+                          color: appConfig.isCustomUrlActive
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                        label: Text(
+                          appConfig.isCustomUrlActive
+                              ? 'Server (Custom)'
+                              : 'Server Settings',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: appConfig.isCustomUrlActive
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          backgroundColor: AppColors.surface,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          minimumSize: const Size(48, 40),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: const BorderSide(color: AppColors.borderLight),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Center(
                     child: Container(
                       width: 64,
@@ -116,7 +157,8 @@ class DemoLoginScreen extends ConsumerWidget {
                               context: context,
                               residentName: "Margaret's family",
                               username: 'sarah.thompson',
-                              details: 'Sarah Thompson (Daughter) · Margaret (Age 82)',
+                              details:
+                                  'Sarah Thompson (Daughter) · Margaret (Age 82)',
                               tag: 'Primary Demo',
                               onTap: () async {
                                 final success = await ref
@@ -228,7 +270,8 @@ class DemoLoginScreen extends ConsumerWidget {
                           ),
                           if (tag != null)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: AppColors.primaryLight,
                                 borderRadius: BorderRadius.circular(8),

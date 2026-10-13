@@ -83,12 +83,9 @@ class MealTrackerNotifier extends StateNotifier<MealTrackerState> {
     state = state.copyWith(todayMeals: [created, ...state.todayMeals]);
   }
 
-  void addCustomFood(FoodItem food) {
-    final repo = _repository;
-    if (repo is MockMealRepository) {
-      repo.addCustomFood(food);
-    }
-    state = state.copyWith(foodLibrary: [...state.foodLibrary, food]);
+  Future<void> addCustomFood(FoodItem food) async {
+    final created = await _repository.addCustomFood(food);
+    state = state.copyWith(foodLibrary: [...state.foodLibrary, created]);
   }
 }
 

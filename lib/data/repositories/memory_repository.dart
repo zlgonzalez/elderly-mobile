@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/config/app_config.dart';
 import '../../domain/entities/memory_item.dart';
 import '../../core/network/api_client.dart';
 import 'http_memory_repository.dart';
+import 'mock_memory_repository.dart';
 
 // [MICROSERVICE_INTEGRATION_POINT]: MemoryService - List/Create Memories
 // Contract: GET /api/v1/memories?patient_id={uuid}
@@ -14,6 +16,10 @@ abstract class MemoryRepository {
 }
 
 final memoryRepositoryProvider = Provider<MemoryRepository>((ref) {
+  final config = ref.watch(appConfigProvider);
+  if (config.useMockData) {
+    return MockMemoryRepository();
+  }
   final apiClient = ref.watch(apiClientProvider);
   return HttpMemoryRepository(apiClient: apiClient);
 });

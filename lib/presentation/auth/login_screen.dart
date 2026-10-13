@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../family_portal/resident_provider.dart';
+import '../shared/server_settings_modal.dart';
 import 'auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -31,8 +33,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _passwordController.text,
         );
 
-    if (success && mounted) {
-      context.go('/portal');
+    if (success) {
+      final user = ref.read(authProvider).user;
+      if (user != null) {
+        await ref
+            .read(residentProvider.notifier)
+            .selectById(user.linkedResidentId);
+      }
+      if (mounted) {
+        context.go('/portal');
+      }
     }
   }
 
@@ -48,6 +58,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          IconButton(
+            key: const Key('login_settings_button'),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Server Settings',
+            onPressed: () => ServerSettingsModal.show(context),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Center(
@@ -62,10 +80,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Text(
                       'Sign in to your account',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -81,7 +100,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.allergyRedBg,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.allergyRed.withAlpha(50)),
+                          border: Border.all(
+                              color: AppColors.allergyRed.withAlpha(50)),
                         ),
                         child: Text(
                           authState.errorMessage!,

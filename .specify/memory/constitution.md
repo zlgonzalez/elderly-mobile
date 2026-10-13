@@ -1,50 +1,31 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Kubo North Mobile App Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Self-Contained Feature Architecture
+Maintain a clean separation between Presentation (`lib/presentation/`), Domain entities (`lib/domain/entities/`), Data repositories (`lib/data/repositories/`), and Core infrastructure (`lib/core/`). Widgets must not perform direct HTTP calls; all data access flows through Riverpod providers and repository interfaces.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Microservice Pluggability
+Every data domain exposes an abstract repository interface with both an HTTP implementation (`Http*Repository`) and a local fallback/mock implementation (`Mock*Repository`), routed through the centralized `ApiClient` (`apiClientProvider`) and `AppConfig` (`appConfigProvider`).
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Test-First & Platform Coverage
+All core configuration, data repositories, and interactive UI flows must be covered by automated `flutter_test` unit and widget tests that run cleanly without external network dependencies.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Environment-Aware Configuration
+All backend microservice URLs and environment flags must be managed centrally via `AppConfig` (`lib/core/config/app_config.dart`), supporting compile-time `--dart-define` defaults, platform-aware localhost routing, and runtime user-configurable base URL overrides persisted on the device.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+## Quality & UX Constraints
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+- **Accessibility & Touch Targets**: Minimum 48x48dp interactive touch targets and WCAG 2.1 AA contrast compliance using the calming `#F2FAF5` palette.
+- **Resilience**: Network requests must enforce bounded timeouts and degrade gracefully when a local or remote server is unreachable.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+## Development Workflow
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- Verify all changes with `flutter analyze` and `flutter test` prior to completion.
+- Keep dependencies minimal; reuse the established Flutter + Riverpod + Hive + GoRouter + `http` stack.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution governs all specifications, implementation plans, and code changes in `elderly-mobile`.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-09-26 | **Last Amended**: 2026-10-12

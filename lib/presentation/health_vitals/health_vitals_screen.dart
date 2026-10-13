@@ -109,11 +109,11 @@ class HealthVitalsScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
 
                     // Physical State Logger (Record Vitals Form)
-                    const RecordVitalsForm(),
+                    RecordVitalsForm(key: ValueKey('vitals_form_${resident.id}')),
                     const SizedBox(height: 16),
 
                     // Meal Logger (Nutrition & Meals)
-                    const MealTrackerWidget(),
+                    MealTrackerWidget(key: ValueKey('meal_tracker_${resident.id}')),
                     const SizedBox(height: 16),
 
                     // Recent Vitals Log Section
