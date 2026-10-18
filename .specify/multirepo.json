@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "abort_on_dirty": true,
+  "base_branch": "main",
+  "repositories": [
+    "../elderly-microservices",
+    "../elderly-mobile",
+    "../kubo-datastack"
+  ]
+}
