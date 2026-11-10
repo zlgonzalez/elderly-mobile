@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:elderly_mobile/core/network/api_client.dart';
 import 'package:elderly_mobile/data/repositories/http_resident_repository.dart';
 import 'package:elderly_mobile/data/repositories/http_meal_repository.dart';
@@ -12,10 +15,22 @@ import 'package:elderly_mobile/domain/entities/memory_item.dart';
 void main() {
   group('HTTP Repositories Fallback & Contract Tests', () {
     late ApiClient apiClient;
+    late DebugPrintCallback originalDebugPrint;
 
     setUp(() {
-      // Use an unroutable port so network calls immediately fail and trigger fallback
-      apiClient = ApiClient(baseUrl: 'http://127.0.0.1:59999/api/v1');
+      originalDebugPrint = debugPrint;
+      debugPrint = (String? message, {int? wrapWidth}) {};
+      final mockClient = MockClient((request) async {
+        throw http.ClientException('Offline');
+      });
+      apiClient = ApiClient(
+        baseUrl: 'http://localhost:8080/api/v1',
+        httpClient: mockClient,
+      );
+    });
+
+    tearDown(() {
+      debugPrint = originalDebugPrint;
     });
 
     test('HttpResidentRepository falls back cleanly when offline', () async {
