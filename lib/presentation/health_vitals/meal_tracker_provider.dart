@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/meal_repository.dart';
-import '../../data/repositories/mock_meal_repository.dart';
 import '../../domain/entities/meal_log.dart';
 import '../family_portal/resident_provider.dart';
 
