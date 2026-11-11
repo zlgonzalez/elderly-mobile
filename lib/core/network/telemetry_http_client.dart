@@ -64,7 +64,7 @@ class TelemetryHttpClient extends http.BaseClient {
     final sanitizedRoute = _sanitizeRoute(request.url.path);
 
     final event = TelemetryEvent(
-      eventId: _generateUuidV4(),
+      eventId: TelemetryEvent.generateUuidV4(_random),
       timestamp: DateTime.now().toUtc(),
       appVersion: '1.0.0+1',
       deviceInfo: DeviceEnvironmentInfo.collectCurrent(),
@@ -103,13 +103,6 @@ class TelemetryHttpClient extends http.BaseClient {
   String _generateSpanId() {
     final bytes = List<int>.generate(8, (_) => _random.nextInt(256));
     return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-  }
-
-  String _generateUuidV4() {
-    final now = DateTime.now().microsecondsSinceEpoch;
-    final rand = (now ^ 0x5DEECE66D).abs();
-    final hex = rand.toRadixString(16).padLeft(32, '0');
-    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-4${hex.substring(13, 16)}-a${hex.substring(17, 20)}-${hex.substring(20, 32)}';
   }
 
   @override

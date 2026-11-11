@@ -112,5 +112,18 @@ void main() {
       final totalElapsedMs = stopwatch.elapsedMilliseconds;
       expect(totalElapsedMs, lessThan(100));
     });
+
+    test('TelemetryEvent.generateUuidV4 returns valid unique RFC-4122 v4 UUIDs', () {
+      final uuidV4Pattern = RegExp(
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+      );
+      final generated = <String>{};
+      for (var i = 0; i < 100; i++) {
+        final id = TelemetryEvent.generateUuidV4();
+        expect(uuidV4Pattern.hasMatch(id), isTrue);
+        generated.add(id);
+      }
+      expect(generated, hasLength(100));
+    });
   });
 }

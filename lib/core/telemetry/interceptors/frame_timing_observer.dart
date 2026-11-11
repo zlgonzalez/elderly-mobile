@@ -31,7 +31,7 @@ class FrameTimingObserver {
       final totalDurationMs = timing.totalSpan.inMicroseconds / 1000.0;
       if (totalDurationMs > jankThresholdMs) {
         final event = TelemetryEvent(
-          eventId: DateTime.now().microsecondsSinceEpoch.toString(),
+          eventId: TelemetryEvent.generateUuidV4(),
           timestamp: DateTime.now().toUtc(),
           appVersion: '1.0.0+1',
           deviceInfo: DeviceEnvironmentInfo.collectCurrent(),

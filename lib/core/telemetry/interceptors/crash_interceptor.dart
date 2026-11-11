@@ -95,7 +95,7 @@ class CrashInterceptor {
             connectivityType: 'none',
           );
 
-    final eventId = _generateUuidV4();
+    final eventId = TelemetryEvent.generateUuidV4();
 
     return TelemetryEvent(
       eventId: eventId,
@@ -108,15 +108,8 @@ class CrashInterceptor {
         'exception_type': exception.runtimeType.toString(),
         'message': exception.toString(),
         'stack_trace': stackTrace.toString(),
-        if (extraContext != null) ...extraContext,
+        ...?extraContext,
       },
     );
-  }
-
-  static String _generateUuidV4() {
-    final now = DateTime.now().microsecondsSinceEpoch;
-    final rand = (now ^ 0x5DEECE66D).abs();
-    final hex = rand.toRadixString(16).padLeft(32, '0');
-    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-4${hex.substring(13, 16)}-a${hex.substring(17, 20)}-${hex.substring(20, 32)}';
   }
 }

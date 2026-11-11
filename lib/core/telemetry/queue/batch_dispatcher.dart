@@ -107,7 +107,7 @@ class BatchDispatcher {
 
   Future<bool> _dispatchBatch(List<TelemetryEvent> events) async {
     final batchPayload = {
-      'batch_id': _generateUuidV4(),
+      'batch_id': TelemetryEvent.generateUuidV4(_random),
       'sent_at': DateTime.now().toUtc().toIso8601String(),
       'events': events.map((e) => e.toJson()).toList(),
     };
@@ -155,12 +155,5 @@ class BatchDispatcher {
     _backoffUntil = DateTime.now().add(
       Duration(seconds: baseSeconds, milliseconds: jitterMs),
     );
-  }
-
-  String _generateUuidV4() {
-    final now = DateTime.now().microsecondsSinceEpoch;
-    final rand = (now ^ 0x5DEECE66D).abs();
-    final hex = rand.toRadixString(16).padLeft(32, '0');
-    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-4${hex.substring(13, 16)}-a${hex.substring(17, 20)}-${hex.substring(20, 32)}';
   }
 }

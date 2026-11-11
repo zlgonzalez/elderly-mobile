@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'config/telemetry_category.dart';
 import 'config/telemetry_config_manager.dart';
 import 'interceptors/crash_interceptor.dart';
 import 'models/device_environment_info.dart';

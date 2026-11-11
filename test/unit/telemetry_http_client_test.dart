@@ -4,15 +4,11 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:elderly_mobile/core/network/telemetry_http_client.dart';
 import 'package:elderly_mobile/core/telemetry/config/telemetry_category.dart';
-import 'package:elderly_mobile/core/telemetry/models/telemetry_event.dart';
 import 'package:elderly_mobile/core/telemetry/telemetry_service.dart';
 
 void main() {
   group('TelemetryHttpClient Unit Tests', () {
-    late List<TelemetryEvent> recordedEvents;
-
     setUp(() {
-      recordedEvents = [];
       TelemetryService.instance.configManager.applyDebugOverride(
         TelemetryCategory.networkTracing,
         enabled: true,
