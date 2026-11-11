@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import 'telemetry_http_client.dart';
 
 /// Result of probing a candidate microservices base URL from the Settings panel.
 class ConnectionTestResult {
@@ -41,7 +42,7 @@ class ApiClient {
     http.Client? httpClient,
   })  : _authToken = initialAuthToken ?? _sharedAuthToken,
         _activeInstitutionId = initialInstitutionId ?? _sharedInstitutionId,
-        _httpClient = httpClient;
+        _httpClient = httpClient ?? TelemetryHttpClient();
 
   String? get authToken => _authToken;
   String? get activeInstitutionId => _activeInstitutionId;

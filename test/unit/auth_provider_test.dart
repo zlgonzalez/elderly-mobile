@@ -1,11 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elderly_mobile/presentation/auth/auth_provider.dart';
+import 'package:elderly_mobile/data/repositories/mock_auth_repository.dart';
 
 void main() {
   group('AuthNotifier Tests', () {
+    ProviderContainer createContainer() => ProviderContainer(
+          overrides: [
+            authRepositoryProvider.overrideWithValue(MockAuthRepository()),
+          ],
+        );
+
     test('Initial state is unauthenticated', () {
-      final container = ProviderContainer();
+      final container = createContainer();
       final state = container.read(authProvider);
 
       expect(state.isAuthenticated, isFalse);
@@ -13,7 +20,7 @@ void main() {
     });
 
     test('selectDemoProfile successfully authenticates Sarah Thompson', () async {
-      final container = ProviderContainer();
+      final container = createContainer();
       final notifier = container.read(authProvider.notifier);
 
       final success = await notifier.selectDemoProfile('user_sarah');
@@ -26,7 +33,7 @@ void main() {
     });
 
     test('login with credentials succeeds for demo user', () async {
-      final container = ProviderContainer();
+      final container = createContainer();
       final notifier = container.read(authProvider.notifier);
 
       final success = await notifier.login('lisa.chen', 'anypassword');
@@ -38,7 +45,7 @@ void main() {
     });
 
     test('logout clears user profile', () async {
-      final container = ProviderContainer();
+      final container = createContainer();
       final notifier = container.read(authProvider.notifier);
 
       await notifier.selectDemoProfile('user_sarah');

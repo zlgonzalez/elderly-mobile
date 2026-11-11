@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elderly_mobile/core/config/app_config.dart';
 import 'package:elderly_mobile/core/theme/app_theme.dart';
 import 'package:elderly_mobile/core/theme/app_scroll_behavior.dart';
 
@@ -10,7 +11,14 @@ Widget createPlatformTestWidget({
   List<Override> overrides = const [],
 }) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: [
+      appConfigProvider.overrideWith(
+        (ref) => AppConfigNotifier(
+          AppConfig.fromEnvironment().copyWith(useMockData: true),
+        ),
+      ),
+      ...overrides,
+    ],
     child: MaterialApp(
       theme: AppTheme.lightTheme.copyWith(
         platform: platform,

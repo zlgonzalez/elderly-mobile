@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:elderly_mobile/core/config/app_config.dart';
 import 'package:elderly_mobile/data/fixtures/resident_fixtures.dart';
 import 'package:elderly_mobile/presentation/family_portal/resident_provider.dart';
 import 'package:elderly_mobile/presentation/health_vitals/health_vitals_screen.dart';
@@ -60,7 +61,15 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [
+        appConfigProvider.overrideWith(
+          (ref) => AppConfigNotifier(
+            AppConfig.fromEnvironment().copyWith(useMockData: true),
+          ),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
 
     await tester.pumpWidget(
