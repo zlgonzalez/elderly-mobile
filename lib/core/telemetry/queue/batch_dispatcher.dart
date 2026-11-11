@@ -2,11 +2,18 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/telemetry_category.dart';
 import '../config/telemetry_config_manager.dart';
 import '../models/telemetry_event.dart';
 import 'bounded_ring_buffer.dart';
+
+/// Top-level helper suitable for isolate execution via [compute].
+List<int> encodeAndCompressTelemetryBatch(Map<String, dynamic> batchPayload) {
+  final rawJson = jsonEncode(batchPayload);
+  return gzip.encode(utf8.encode(rawJson));
+}
 
 class BatchDispatcher {
   final BoundedRingBuffer buffer;
@@ -112,9 +119,11 @@ class BatchDispatcher {
       'events': events.map((e) => e.toJson()).toList(),
     };
 
-    final rawJson = jsonEncode(batchPayload);
-    // GZIP payload compression
-    final compressedBytes = gzip.encode(utf8.encode(rawJson));
+    // Offload JSON serialization & GZIP compression to a worker isolate
+    final compressedBytes = await compute(
+      encodeAndCompressTelemetryBatch,
+      batchPayload,
+    );
 
     final headers = <String, String>{
       'Content-Type': 'application/json',
