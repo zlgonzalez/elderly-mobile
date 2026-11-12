@@ -126,6 +126,9 @@ class ApiClient {
   }
 
   List<String> _candidateFallbackBases() {
+    if (kReleaseMode || !_effectiveBaseUrl.toLowerCase().startsWith('http://')) {
+      return const [];
+    }
     const candidates = <String>[
       'http://127.0.0.1:8080/api/v1',
       'http://10.0.2.2:8080/api/v1',
@@ -150,14 +153,15 @@ class ApiClient {
     final normalized = AppConfig.normalizeBaseUrl(rawTarget);
     final probeUri = Uri.parse('$normalized/auth/demo-accounts');
     final stopwatch = Stopwatch()..start();
+    const probeHeaders = <String, String>{'Accept': 'application/json'};
 
     try {
       final response = _httpClient != null
           ? await _httpClient
-              .get(probeUri, headers: _headers)
+              .get(probeUri, headers: probeHeaders)
               .timeout(requestTimeout)
           : await http
-              .get(probeUri, headers: _headers)
+              .get(probeUri, headers: probeHeaders)
               .timeout(requestTimeout);
       stopwatch.stop();
 
@@ -225,20 +229,23 @@ class ApiClient {
   }
 
   Future<dynamic> post(String endpoint,
-      {dynamic body, Map<String, dynamic>? queryParameters}) async {
+      {dynamic body,
+      Map<String, dynamic>? queryParameters,
+      Duration? timeout}) async {
+    final effectiveTimeout = timeout ?? requestTimeout;
     final uri = _buildUri(endpoint, queryParameters);
     if (kDebugMode) {
-      debugPrint('[ApiClient] POST $uri (body: $body)');
+      debugPrint('[ApiClient] POST $uri');
     }
     final encodedBody = body != null ? jsonEncode(body) : null;
     try {
       final response = _httpClient != null
           ? await _httpClient
               .post(uri, headers: _headers, body: encodedBody)
-              .timeout(requestTimeout)
+              .timeout(effectiveTimeout)
           : await http
               .post(uri, headers: _headers, body: encodedBody)
-              .timeout(requestTimeout);
+              .timeout(effectiveTimeout);
       return _handleResponse(response);
     } catch (e) {
       if (_httpClient == null && e is! ApiException) {
@@ -265,7 +272,7 @@ class ApiClient {
       {dynamic body, Map<String, dynamic>? queryParameters}) async {
     final uri = _buildUri(endpoint, queryParameters);
     if (kDebugMode) {
-      debugPrint('[ApiClient] PATCH $uri (body: $body)');
+      debugPrint('[ApiClient] PATCH $uri');
     }
     final encodedBody = body != null ? jsonEncode(body) : null;
     try {
@@ -302,7 +309,7 @@ class ApiClient {
       {dynamic body, Map<String, dynamic>? queryParameters}) async {
     final uri = _buildUri(endpoint, queryParameters);
     if (kDebugMode) {
-      debugPrint('[ApiClient] PUT $uri (body: $body)');
+      debugPrint('[ApiClient] PUT $uri');
     }
     try {
       final encodedBody = body != null ? jsonEncode(body) : null;

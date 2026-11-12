@@ -13,14 +13,20 @@ enum MontessoriCategory {
   static MontessoriCategory fromString(String val) {
     switch (val.toLowerCase().replaceAll(' ', '')) {
       case 'practicallife':
+      case 'functional':
         return MontessoriCategory.practicalLife;
       case 'cognitive':
+      case 'language':
+      case 'math':
         return MontessoriCategory.cognitive;
       case 'creative':
         return MontessoriCategory.creative;
       case 'sensory':
+      case 'sensorial':
+      case 'physical':
         return MontessoriCategory.sensory;
       case 'social':
+      case 'cultural':
         return MontessoriCategory.social;
       default:
         return MontessoriCategory.practicalLife;
@@ -38,6 +44,11 @@ class MontessoriActivity {
   final String whyItMatters;
   final List<String> steps;
   final String? dignityTip;
+  final String? historicalConnection;
+  final String? safetyComfort;
+  final String? scriptPrompt;
+  final String? materialsTraySetup;
+  final bool isPersonalized;
 
   const MontessoriActivity({
     required this.id,
@@ -49,6 +60,11 @@ class MontessoriActivity {
     required this.whyItMatters,
     required this.steps,
     this.dignityTip,
+    this.historicalConnection,
+    this.safetyComfort,
+    this.scriptPrompt,
+    this.materialsTraySetup,
+    this.isPersonalized = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -62,6 +78,11 @@ class MontessoriActivity {
       'whyItMatters': whyItMatters,
       'steps': steps,
       'dignityTip': dignityTip,
+      'historicalConnection': historicalConnection,
+      'safetyComfort': safetyComfort,
+      'scriptPrompt': scriptPrompt,
+      'materialsTraySetup': materialsTraySetup,
+      'isPersonalized': isPersonalized,
     };
   }
 
@@ -78,6 +99,15 @@ class MontessoriActivity {
       whyItMatters: json['whyItMatters'] as String? ?? json['why_it_matters'] as String? ?? '',
       steps: (json['steps'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       dignityTip: json['dignityTip'] as String? ?? json['dignity_tip'] as String?,
+      historicalConnection: json['historicalConnection'] as String? ??
+          json['historical_connection'] as String?,
+      safetyComfort:
+          json['safetyComfort'] as String? ?? json['safety_comfort'] as String?,
+      scriptPrompt:
+          json['scriptPrompt'] as String? ?? json['script_prompt'] as String?,
+      materialsTraySetup: json['materialsTraySetup'] as String? ??
+          json['materials_tray_setup'] as String?,
+      isPersonalized: json['isPersonalized'] as bool? ?? false,
     );
   }
 }

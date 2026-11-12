@@ -11,6 +11,10 @@ class HttpResidentRepository implements ResidentRepository {
 
   HttpResidentRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
+  bool _isAuthError(Object error) =>
+      error is ApiException &&
+      (error.statusCode == 401 || error.statusCode == 403);
+
   @override
   Future<Resident?> getResident(String id) async {
     final backendUuid = ResidentFixtures.toBackendUuid(id);
@@ -20,6 +24,7 @@ class HttpResidentRepository implements ResidentRepository {
         return _mapPatientToResident(res, fallbackId: id);
       }
     } catch (e) {
+      if (_isAuthError(e)) rethrow;
       if (kDebugMode) {
         debugPrint('[HttpResidentRepository] getResident($id) network error: $e, using fallback');
       }
@@ -39,6 +44,7 @@ class HttpResidentRepository implements ResidentRepository {
         }).toList();
       }
     } catch (e) {
+      if (_isAuthError(e)) rethrow;
       if (kDebugMode) {
         debugPrint('[HttpResidentRepository] listResidents() network error: $e, using fallback');
       }
@@ -60,11 +66,21 @@ class HttpResidentRepository implements ResidentRepository {
         'conditions': resident.conditions,
         'allergies': resident.allergies,
         'contacts': resident.contacts.map((c) => c.toJson()).toList(),
+        if (resident.cognitiveCapability != null)
+          'cognitive_capability': resident.cognitiveCapability,
+        if (resident.physicalCapability != null)
+          'physical_capability': resident.physicalCapability,
+        if (resident.cognitiveStage != null)
+          'cognitive_stage': resident.cognitiveStage,
+        'motor_limitations': resident.motorLimitations,
       });
+    } on ApiException {
+      rethrow;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[HttpResidentRepository] updateResident network error: $e');
       }
+      rethrow;
     }
     await _fallback.updateResident(resident);
   }
@@ -129,6 +145,13 @@ class HttpResidentRepository implements ResidentRepository {
           .toList();
     }
 
+    final cognitiveCap = (data['cognitive_capability'] as String?)?.trim();
+    final physicalCap = (data['physical_capability'] as String?)?.trim();
+    final cognitiveStage = (data['cognitive_stage'] as String?)?.trim();
+    final motorLimitations = (data['motor_limitations'] as List<dynamic>?)
+        ?.map((e) => e.toString())
+        .toList();
+
     return fixture.copyWith(
       id: fixture.id,
       name: fullName.isNotEmpty ? fullName : fixture.name,
@@ -142,6 +165,18 @@ class HttpResidentRepository implements ResidentRepository {
       conditions: conditions,
       allergies: allergies,
       contacts: contacts,
+      cognitiveCapability: (cognitiveCap != null && cognitiveCap.isNotEmpty)
+          ? cognitiveCap
+          : fixture.cognitiveCapability,
+      physicalCapability: (physicalCap != null && physicalCap.isNotEmpty)
+          ? physicalCap
+          : fixture.physicalCapability,
+      cognitiveStage: (cognitiveStage != null && cognitiveStage.isNotEmpty)
+          ? cognitiveStage
+          : fixture.cognitiveStage,
+      motorLimitations: (motorLimitations != null && motorLimitations.isNotEmpty)
+          ? motorLimitations
+          : fixture.motorLimitations,
     );
   }
 }

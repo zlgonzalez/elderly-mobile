@@ -114,12 +114,22 @@ class DemoLoginScreen extends ConsumerWidget {
                           // Display family accounts first, then caregiver
                           return Column(
                             children: accounts.map((acc) {
-                              final title = acc.role == 'caregiver'
-                                  ? "${acc.fullName} (${acc.relation})"
-                                  : "${acc.residentName.split(' ').first}'s family";
-                              final details = acc.role == 'caregiver'
-                                  ? "${acc.fullName} · Visiting Caregiver"
-                                  : "${acc.fullName} (${acc.relation}) · ${acc.residentName.split(' ').first} (Age ${acc.residentAge})";
+                              final roleLower = acc.role.toLowerCase();
+                              final String title;
+                              final String details;
+                              if (roleLower == 'admin') {
+                                title = "${acc.fullName} (${acc.relation})";
+                                details = "${acc.fullName} · Administrator";
+                              } else if (roleLower == 'caregiver') {
+                                title = "${acc.fullName} (${acc.relation})";
+                                details =
+                                    "${acc.fullName} · Visiting Caregiver";
+                              } else {
+                                title =
+                                    "${acc.residentName.split(' ').first}'s family";
+                                details =
+                                    "${acc.fullName} (${acc.relation}) · ${acc.residentName.split(' ').first} (Age ${acc.residentAge})";
+                              }
 
                               return _buildProfileCard(
                                 context: context,

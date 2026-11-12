@@ -59,6 +59,10 @@ class Resident {
   final List<String> conditions;
   final List<String> allergies;
   final List<ContactPerson> contacts;
+  final String? cognitiveCapability;
+  final String? physicalCapability;
+  final String? cognitiveStage;
+  final List<String> motorLimitations;
 
   const Resident({
     required this.id,
@@ -73,9 +77,17 @@ class Resident {
     required this.conditions,
     required this.allergies,
     required this.contacts,
+    this.cognitiveCapability,
+    this.physicalCapability,
+    this.cognitiveStage,
+    this.motorLimitations = const [],
   });
 
   String get fullName => name;
+
+  bool get hasRequiredRegimenCapabilities =>
+      (cognitiveCapability != null && cognitiveCapability!.trim().isNotEmpty) &&
+      (physicalCapability != null && physicalCapability!.trim().isNotEmpty);
 
   Resident copyWith({
     String? id,
@@ -90,6 +102,10 @@ class Resident {
     List<String>? conditions,
     List<String>? allergies,
     List<ContactPerson>? contacts,
+    String? cognitiveCapability,
+    String? physicalCapability,
+    String? cognitiveStage,
+    List<String>? motorLimitations,
   }) {
     return Resident(
       id: id ?? this.id,
@@ -104,6 +120,10 @@ class Resident {
       conditions: conditions ?? this.conditions,
       allergies: allergies ?? this.allergies,
       contacts: contacts ?? this.contacts,
+      cognitiveCapability: cognitiveCapability ?? this.cognitiveCapability,
+      physicalCapability: physicalCapability ?? this.physicalCapability,
+      cognitiveStage: cognitiveStage ?? this.cognitiveStage,
+      motorLimitations: motorLimitations ?? this.motorLimitations,
     );
   }
 
@@ -120,6 +140,10 @@ class Resident {
     'conditions': conditions,
     'allergies': allergies,
     'contacts': contacts.map((c) => c.toJson()).toList(),
+    'cognitiveCapability': cognitiveCapability,
+    'physicalCapability': physicalCapability,
+    'cognitiveStage': cognitiveStage,
+    'motorLimitations': motorLimitations,
   };
 
   factory Resident.fromJson(Map<String, dynamic> json) => Resident(
@@ -141,5 +165,15 @@ class Resident {
             ?.map((c) => ContactPerson.fromJson(c as Map<String, dynamic>))
             .toList() ??
         [],
+    cognitiveCapability: json['cognitiveCapability'] as String? ??
+        json['cognitive_capability'] as String?,
+    physicalCapability: json['physicalCapability'] as String? ??
+        json['physical_capability'] as String?,
+    cognitiveStage: json['cognitiveStage'] as String? ??
+        json['cognitive_stage'] as String?,
+    motorLimitations: ((json['motorLimitations'] ?? json['motor_limitations']) as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const [],
   );
 }

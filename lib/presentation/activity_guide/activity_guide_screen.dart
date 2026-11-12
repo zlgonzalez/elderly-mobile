@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../domain/entities/montessori_activity.dart';
+import '../auth/auth_provider.dart';
+import '../care_tasks/care_tasks_provider.dart';
+import '../care_tasks/regimen_flow_helper.dart';
 import '../shared/resident_header.dart';
 import '../shared/ask_kubo_floating_button.dart';
 import 'montessori_provider.dart';
@@ -16,6 +19,10 @@ class ActivityGuideScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final montessoriState = ref.watch(montessoriProvider);
     final notifier = ref.read(montessoriProvider.notifier);
+    final user = ref.watch(authProvider).user;
+    final canManageRegimen = canManageRegimenFor(user);
+    final isGenerating =
+        ref.watch(careTasksProvider.select((s) => s.isGenerating));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -52,6 +59,21 @@ class ActivityGuideScreen extends ConsumerWidget {
                 ],
               ),
             ),
+
+            if (canManageRegimen)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: isGenerating
+                        ? null
+                        : () => startGenerateRegimenFlow(context, ref),
+                    icon: const Icon(Icons.auto_awesome, size: 16),
+                    label: const Text('Generate 7-Day Regimen'),
+                  ),
+                ),
+              ),
 
             // Search Bar & Category Filters
             Padding(

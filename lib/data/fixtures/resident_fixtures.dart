@@ -60,6 +60,10 @@ class ResidentFixtures {
         phone: '555-0199',
       ),
     ],
+    cognitiveCapability: 'Mild dementia; enjoys 2-3 step reminiscing and structured trays',
+    physicalCapability: 'Ambulates with support; mild stiffness in hands from arthritis',
+    cognitiveStage: 'mild',
+    motorLimitations: ['hand stiffness'],
   );
 
   static const Resident robertChen = Resident(
@@ -102,6 +106,10 @@ class ResidentFixtures {
         phone: '555-0144',
       ),
     ],
+    cognitiveCapability: 'Mild cognitive impairment; excels at spatial and sequencing invitations',
+    physicalCapability: 'Independent ambulation; steadier grip on weighted tools',
+    cognitiveStage: 'mild',
+    motorLimitations: [],
   );
 
   static const Resident dorothyWilliams = Resident(

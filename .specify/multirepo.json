@@ -5,6 +5,7 @@
   "repositories": [
     "../elderly-microservices",
     "../elderly-mobile",
-    "../kubo-datastack"
+    "../kubo-datastack",
+    "../kubo-agents"
   ]
 }
