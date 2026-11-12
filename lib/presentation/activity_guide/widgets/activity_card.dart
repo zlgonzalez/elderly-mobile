@@ -18,7 +18,7 @@ class ActivityCard extends ConsumerStatefulWidget {
 class _ActivityCardState extends ConsumerState<ActivityCard> {
   bool _isExpanded = false;
 
-  void _scheduleActivity() {
+  Future<void> _scheduleActivity() async {
     final resident = ref.read(residentProvider);
     final now = DateTime.now();
 
@@ -26,25 +26,44 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
       id: 'task_${DateTime.now().millisecondsSinceEpoch}',
       residentId: resident.id,
       title: widget.activity.title,
-      description: widget.activity.steps.isNotEmpty ? widget.activity.steps.first : widget.activity.summary,
+      description: widget.activity.steps.isNotEmpty
+          ? widget.activity.steps.first
+          : widget.activity.summary,
       time: '${now.hour.toString().padLeft(2, '0')}:30',
       category: _mapCategoryToTaskCategory(widget.activity.category),
       status: TaskStatus.pending,
+      materials: widget.activity.materials,
+      materialsTraySetup: widget.activity.materialsTraySetup,
+      steps: widget.activity.steps,
+      scriptPrompt: widget.activity.scriptPrompt,
+      dignityTip: widget.activity.dignityTip,
+      historicalConnection: widget.activity.historicalConnection,
+      safetyComfort: widget.activity.safetyComfort,
+      montessoriDomain: widget.activity.category.label,
     );
 
-    ref.read(careTasksProvider.notifier).addTask(task);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Scheduled "${widget.activity.title}" to Care Tasks!'),
-        backgroundColor: AppColors.primary,
-        action: SnackBarAction(
-          label: 'DISMISS',
-          textColor: Colors.white,
-          onPressed: () {},
+    try {
+      await ref.read(careTasksProvider.notifier).addTask(task);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Scheduled "${widget.activity.title}" to Care Tasks!'),
+          backgroundColor: AppColors.primary,
+          action: SnackBarAction(
+            label: 'DISMISS',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not schedule "${widget.activity.title}": $e'),
+        ),
+      );
+    }
   }
 
   TaskCategory _mapCategoryToTaskCategory(MontessoriCategory cat) {
@@ -132,13 +151,37 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
             ),
             const SizedBox(height: 10),
 
-            // Title
-            Text(
-              a.title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+            // Title & Personalized Badge
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    a.title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                   ),
+                ),
+                if (a.isPersonalized)
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'Personalized',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 6),
 
@@ -325,6 +368,29 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                    ],
+                    if (a.historicalConnection != null &&
+                        a.historicalConnection!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Memory Anchor: ${a.historicalConnection!}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                    if (a.safetyComfort != null &&
+                        a.safetyComfort!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Safety & Comfort: ${a.safetyComfort!}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],

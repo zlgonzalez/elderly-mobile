@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/montessori_repository.dart';
+import '../../domain/entities/care_task.dart';
 import '../../domain/entities/montessori_activity.dart';
+import '../../domain/entities/regimen_plan.dart';
+import '../care_tasks/care_tasks_provider.dart';
 
 class MontessoriState {
   final List<MontessoriActivity> allActivities;
@@ -33,7 +36,8 @@ class MontessoriState {
     return MontessoriState(
       allActivities: allActivities ?? this.allActivities,
       filteredActivities: filteredActivities ?? this.filteredActivities,
-      selectedCategory: clearCategory ? null : (selectedCategory ?? this.selectedCategory),
+      selectedCategory:
+          clearCategory ? null : (selectedCategory ?? this.selectedCategory),
       searchQuery: searchQuery ?? this.searchQuery,
       isLoading: isLoading ?? this.isLoading,
     );
@@ -42,23 +46,80 @@ class MontessoriState {
 
 class MontessoriNotifier extends StateNotifier<MontessoriState> {
   final MontessoriRepository _repository;
+  List<CareTask> _personalizedTasks = const [];
+  int _loadToken = 0;
 
-  MontessoriNotifier(this._repository) : super(const MontessoriState(isLoading: true)) {
+  MontessoriNotifier(this._repository, [List<CareTask>? initialTasks])
+      : _personalizedTasks = initialTasks ?? const [],
+        super(const MontessoriState(isLoading: true)) {
     loadActivities();
   }
 
   Future<void> loadActivities() async {
+    final loadToken = ++_loadToken;
     state = state.copyWith(isLoading: true);
-    final all = await _repository.getActivities();
-    _applyFilter(all: all, category: state.selectedCategory, query: state.searchQuery);
+    try {
+      final curated = await _repository.getActivities();
+      if (!mounted || loadToken != _loadToken) return;
+      final personalized = _personalizedTasks
+          .where((t) =>
+              t.materials.isNotEmpty ||
+              t.steps.isNotEmpty ||
+              (t.historicalConnection?.isNotEmpty ?? false))
+          .map((t) => MontessoriActivity(
+                id: 'personalized_${t.id}',
+                title: t.title,
+                category: MontessoriTaxonomyMapper.toMontessoriCategory(
+                    t.montessoriDomain ?? t.category.displayName),
+                summary: t.description,
+                durationMinutes: 25,
+                materials: t.materials,
+                whyItMatters: t.historicalConnection ??
+                    t.completionNote ??
+                    'Personalized to resident capability & history.',
+                steps: t.steps,
+                dignityTip: t.dignityTip,
+                historicalConnection: t.historicalConnection,
+                safetyComfort: t.safetyComfort,
+                scriptPrompt: t.scriptPrompt,
+                materialsTraySetup: t.materialsTraySetup,
+                isPersonalized: true,
+              ))
+          .toList();
+
+      final seenTitles = personalized.map((a) => a.title.toLowerCase()).toSet();
+      final combined = [
+        ...personalized,
+        ...curated.where((c) => !seenTitles.contains(c.title.toLowerCase())),
+      ];
+      _applyFilter(
+        all: combined,
+        category: state.selectedCategory,
+        query: state.searchQuery,
+      );
+    } catch (_) {
+      if (!mounted || loadToken != _loadToken) return;
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  void syncPersonalizedTasks(List<CareTask> tasks) {
+    _personalizedTasks = tasks;
+    loadActivities();
   }
 
   void selectCategory(MontessoriCategory? category) {
-    _applyFilter(all: state.allActivities, category: category, query: state.searchQuery);
+    _applyFilter(
+        all: state.allActivities,
+        category: category,
+        query: state.searchQuery);
   }
 
   void setSearchQuery(String query) {
-    _applyFilter(all: state.allActivities, category: state.selectedCategory, query: query);
+    _applyFilter(
+        all: state.allActivities,
+        category: state.selectedCategory,
+        query: query);
   }
 
   void _applyFilter({
@@ -88,7 +149,14 @@ class MontessoriNotifier extends StateNotifier<MontessoriState> {
   }
 }
 
-final montessoriProvider = StateNotifierProvider<MontessoriNotifier, MontessoriState>((ref) {
+final montessoriProvider =
+    StateNotifierProvider<MontessoriNotifier, MontessoriState>((ref) {
   final repo = ref.watch(montessoriRepositoryProvider);
-  return MontessoriNotifier(repo);
+  final initialTasks = ref.read(careTasksProvider).tasks;
+  final notifier = MontessoriNotifier(repo, initialTasks);
+  ref.listen<List<CareTask>>(
+    careTasksProvider.select((s) => s.tasks),
+    (_, next) => notifier.syncPersonalizedTasks(next),
+  );
+  return notifier;
 });

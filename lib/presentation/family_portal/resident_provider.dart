@@ -44,6 +44,29 @@ class ResidentNotifier extends StateNotifier<Resident> {
     await selectById(state.id);
   }
 
+  /// Persists cognitive & physical capability fields onto the resident profile.
+  Future<Resident> updateCapabilities({
+    required String cognitiveCapability,
+    required String physicalCapability,
+    String? cognitiveStage,
+    List<String>? motorLimitations,
+  }) async {
+    final updated = state.copyWith(
+      cognitiveCapability: cognitiveCapability.trim(),
+      physicalCapability: physicalCapability.trim(),
+      cognitiveStage: cognitiveStage,
+      motorLimitations: motorLimitations ?? state.motorLimitations,
+    );
+    final repo = _repository;
+    if (repo != null) {
+      await repo.updateResident(updated);
+    }
+    if (mounted) {
+      state = updated;
+    }
+    return updated;
+  }
+
   void resetToDemo() {
     _lastSelectedResidentId = ResidentFixtures.margaretThompson.id;
     state = ResidentFixtures.margaretThompson;

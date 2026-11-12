@@ -1,6 +1,7 @@
 enum UserRole {
   familyMember,
   visitingCaregiver,
+  admin,
 }
 
 class UserProfile {
@@ -32,17 +33,23 @@ class UserProfile {
     'linkedResidentId': linkedResidentId,
   };
 
-  factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
-    id: json['id'] as String,
-    username: json['username'] as String,
-    fullName: json['fullName'] as String,
-    role: (json['role'] as String?) == 'visitingCaregiver'
-        ? UserRole.visitingCaregiver
-        : UserRole.familyMember,
-    relation: json['relation'] as String? ?? 'Family Member',
-    phone: json['phone'] as String? ?? '',
-    linkedResidentId: json['linkedResidentId'] as String? ?? 'res_margaret',
-  );
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    final roleStr = (json['role'] as String? ?? '').toLowerCase();
+    final role = roleStr == 'admin'
+        ? UserRole.admin
+        : roleStr == 'visitingcaregiver' || roleStr == 'caregiver'
+            ? UserRole.visitingCaregiver
+            : UserRole.familyMember;
+    return UserProfile(
+      id: json['id'] as String,
+      username: json['username'] as String,
+      fullName: json['fullName'] as String,
+      role: role,
+      relation: json['relation'] as String? ?? 'Family Member',
+      phone: json['phone'] as String? ?? '',
+      linkedResidentId: json['linkedResidentId'] as String? ?? 'res_margaret',
+    );
+  }
 }
 
 class DemoAccount {

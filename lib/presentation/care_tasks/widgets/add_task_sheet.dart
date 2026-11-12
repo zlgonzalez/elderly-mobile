@@ -18,6 +18,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   final _descriptionController = TextEditingController();
   final _timeController = TextEditingController(text: '10:00 AM');
   TaskCategory _selectedCategory = TaskCategory.activity;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -27,11 +28,12 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     super.dispose();
   }
 
-  void _saveTask() {
-    if (!_formKey.currentState!.validate()) {
+  Future<void> _saveTask() async {
+    if (_isSubmitting || !_formKey.currentState!.validate()) {
       return;
     }
 
+    setState(() => _isSubmitting = true);
     final resident = ref.read(residentProvider);
     final task = CareTask(
       id: 'task_${DateTime.now().millisecondsSinceEpoch}',
@@ -43,15 +45,24 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
       status: TaskStatus.pending,
     );
 
-    ref.read(careTasksProvider.notifier).addTask(task);
-    Navigator.of(context).pop();
+    try {
+      await ref.read(careTasksProvider.notifier).addTask(task);
+      if (!mounted) return;
+      Navigator.of(context).pop();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Activity "${task.title}" scheduled for ${task.time}'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Activity "${task.title}" scheduled for ${task.time}'),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not schedule activity: $e')),
+      );
+    }
   }
 
   @override
@@ -156,9 +167,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                         context: context,
                         initialTime: const TimeOfDay(hour: 10, minute: 0),
                       );
-                      if (picked != null) {
-                        _timeController.text = picked.format(context);
-                      }
+                      if (!mounted || picked == null) return;
+                      _timeController.text = picked.format(context);
                     },
                   ),
                 ),
@@ -195,7 +205,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                   Expanded(
                     flex: 2,
                     child: ElevatedButton.icon(
-                      onPressed: _saveTask,
+                      onPressed: _isSubmitting ? null : _saveTask,
                       icon: const Icon(Icons.check),
                       label: const Text('Schedule Activity'),
                     ),

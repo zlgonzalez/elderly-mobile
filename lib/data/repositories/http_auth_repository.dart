@@ -12,6 +12,10 @@ class HttpAuthRepository implements AuthRepository {
 
   HttpAuthRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
+  bool _isAuthError(Object error) =>
+      error is ApiException &&
+      (error.statusCode == 401 || error.statusCode == 403);
+
   @override
   Future<List<DemoAccount>> getDemoAccounts() async {
     try {
@@ -41,6 +45,7 @@ class HttpAuthRepository implements AuthRepository {
         return accounts;
       }
     } catch (e) {
+      if (_isAuthError(e)) rethrow;
       if (kDebugMode) {
         debugPrint('[HttpAuthRepository] getDemoAccounts network error: $e, using fallback');
       }
@@ -74,9 +79,9 @@ class HttpAuthRepository implements AuthRepository {
 
         final userData = res['user'] as Map<String, dynamic>? ?? {};
         final roleStr = userData['role'] as String? ?? 'family';
-        final userRole = roleStr.toLowerCase() == 'caregiver'
-            ? UserRole.visitingCaregiver
-            : roleStr.toLowerCase() == 'admin'
+        final userRole = roleStr.toLowerCase() == 'admin'
+            ? UserRole.admin
+            : roleStr.toLowerCase() == 'caregiver'
                 ? UserRole.visitingCaregiver
                 : UserRole.familyMember;
 
@@ -95,19 +100,26 @@ class HttpAuthRepository implements AuthRepository {
           username: cleanUsername,
           fullName: userData['name']?.toString() ?? cleanUsername,
           role: userRole,
-          relation: userRole == UserRole.visitingCaregiver ? 'Caregiver' : 'Family Member',
+          relation: userRole == UserRole.admin
+              ? 'Administrator'
+              : userRole == UserRole.visitingCaregiver
+                  ? 'Caregiver'
+                  : 'Family Member',
           phone: userData['phone_number']?.toString() ?? '555-0100',
           linkedResidentId: linkedResidentId,
         );
         return _currentUser;
       }
     } catch (e) {
+      if (_isAuthError(e)) {
+        return null;
+      }
       if (kDebugMode) {
         debugPrint('[HttpAuthRepository] Remote login failed ($e), attempting fallback');
       }
     }
 
-    // Fallback to local mock if backend is temporarily disconnected
+    // Fallback to local mock only if backend is unreachable
     final fallbackUser = await _mockFallback.loginWithCredentials(username, password);
     _currentUser = fallbackUser;
     return _currentUser;
@@ -139,9 +151,11 @@ class HttpAuthRepository implements AuthRepository {
 
         final userData = res['user'] as Map<String, dynamic>? ?? {};
         final roleStr = userData['role'] as String? ?? acc.role;
-        final userRole = roleStr.toLowerCase() == 'caregiver' || acc.relation == 'Visiting Nurse'
-            ? UserRole.visitingCaregiver
-            : UserRole.familyMember;
+        final userRole = roleStr.toLowerCase() == 'admin'
+            ? UserRole.admin
+            : roleStr.toLowerCase() == 'caregiver' || acc.relation == 'Visiting Nurse'
+                ? UserRole.visitingCaregiver
+                : UserRole.familyMember;
 
         _currentUser = UserProfile(
           id: userData['id']?.toString() ?? acc.id,
@@ -155,6 +169,7 @@ class HttpAuthRepository implements AuthRepository {
         return _currentUser!;
       }
     } catch (e) {
+      if (_isAuthError(e)) rethrow;
       if (kDebugMode) {
         debugPrint('[HttpAuthRepository] selectDemoProfile network call failed ($e), using local fallback');
       }

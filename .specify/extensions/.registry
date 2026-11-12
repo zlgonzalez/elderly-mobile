@@ -18,6 +18,51 @@
       },
       "registered_skills": [],
       "installed_at": "2026-04-25T16:49:20.162541+00:00"
+    },
+    "speckit-implement": {
+      "version": "0.1.0",
+      "source": "local",
+      "manifest_hash": "sha256:a509714086284c873cee89f1c27fc10c126a4b806f3fa990f2424219cecbe42e",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "agy": [
+          "speckit.speckit-implement.before",
+          "speckit.speckit-implement.after"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-11-11T18:19:06.500303+00:00"
+    },
+    "speckit-plan": {
+      "version": "0.1.0",
+      "source": "local",
+      "manifest_hash": "sha256:39b9d743d7b972dadb143d2efb59035fe2f9b594f7bea7168d4d9703c4d3e6fa",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "agy": [
+          "speckit.speckit-plan.before",
+          "speckit.speckit-plan.after"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-11-11T18:19:06.704863+00:00"
+    },
+    "speckit-specify": {
+      "version": "0.1.0",
+      "source": "local",
+      "manifest_hash": "sha256:7708ecbefaa48f444c79d1c011fab38304930dd5488fbda426ae2a6e6c193102",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "agy": [
+          "speckit.speckit-specify.before",
+          "speckit.speckit-specify.after"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-11-11T18:19:06.909983+00:00"
     }
   }
 }

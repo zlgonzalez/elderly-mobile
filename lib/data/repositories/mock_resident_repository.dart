@@ -29,4 +29,10 @@ class MockResidentRepository implements ResidentRepository {
     final fixtureId = ResidentFixtures.toFixtureId(resident.id);
     _residents[fixtureId] = resident.copyWith(id: fixtureId);
   }
+
+  void resetToDemo() {
+    _residents
+      ..clear()
+      ..addEntries(ResidentFixtures.allResidents.map((r) => MapEntry(r.id, r)));
+  }
 }

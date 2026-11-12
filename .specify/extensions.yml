@@ -18,6 +18,13 @@ hooks:
     prompt: Execute speckit.git.feature?
     description: Create feature branch before specification
     condition: null
+  - extension: speckit-specify
+    command: speckit.speckit-specify.before
+    enabled: true
+    optional: true
+    prompt: Run before_specify hook?
+    description: Before /speckit.specify hook
+    condition: null
   before_clarify:
   - extension: git
     command: speckit.git.commit
@@ -34,6 +41,13 @@ hooks:
     prompt: Commit outstanding changes before planning?
     description: Auto-commit before implementation planning
     condition: null
+  - extension: speckit-plan
+    command: speckit.speckit-plan.before
+    enabled: true
+    optional: true
+    prompt: Run before_plan hook?
+    description: Before /speckit.plan hook
+    condition: null
   before_tasks:
   - extension: git
     command: speckit.git.commit
@@ -49,6 +63,13 @@ hooks:
     optional: true
     prompt: Commit outstanding changes before implementation?
     description: Auto-commit before implementation
+    condition: null
+  - extension: speckit-implement
+    command: speckit.speckit-implement.before
+    enabled: true
+    optional: false
+    prompt: Generate integration tests from the spec before implementation?
+    description: Generate integration tests from the feature spec before implementation
     condition: null
   before_checklist:
   - extension: git
@@ -90,6 +111,13 @@ hooks:
     prompt: Commit specification changes?
     description: Auto-commit after specification
     condition: null
+  - extension: speckit-specify
+    command: speckit.speckit-specify.after
+    enabled: true
+    optional: true
+    prompt: Run after_specify hook?
+    description: After /speckit.specify hook
+    condition: null
   after_clarify:
   - extension: git
     command: speckit.git.commit
@@ -106,6 +134,13 @@ hooks:
     prompt: Commit plan changes?
     description: Auto-commit after implementation planning
     condition: null
+  - extension: speckit-plan
+    command: speckit.speckit-plan.after
+    enabled: true
+    optional: true
+    prompt: Run after_plan hook?
+    description: After /speckit.plan hook
+    condition: null
   after_tasks:
   - extension: git
     command: speckit.git.commit
@@ -121,6 +156,13 @@ hooks:
     optional: true
     prompt: Commit implementation changes?
     description: Auto-commit after implementation
+    condition: null
+  - extension: speckit-implement
+    command: speckit.speckit-implement.after
+    enabled: true
+    optional: true
+    prompt: Run after_implement hook?
+    description: After /speckit.implement hook
     condition: null
   after_checklist:
   - extension: git

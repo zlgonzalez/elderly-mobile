@@ -132,6 +132,9 @@ class AppConfig {
   bool get isCustomUrlActive =>
       customBaseUrl != null && customBaseUrl!.trim().isNotEmpty;
 
+  /// Timeout budget for personalized AI regimen generation & refinement requests.
+  static const Duration regimenRequestTimeout = Duration(seconds: 75);
+
   /// The default platform base URL for the current environment (ignoring custom overrides).
   String get defaultBaseUrl => resolveDefaultBaseUrl(environment);
 
@@ -224,7 +227,7 @@ class AppConfig {
 
   /// Validates a user-provided base URL or shorthand IP/host.
   /// Returns `null` if valid, or a user-facing error message if invalid.
-  static String? validateBaseUrl(String? rawInput) {
+  static String? validateBaseUrl(String? rawInput, {bool? requireHttps}) {
     if (rawInput == null || rawInput.trim().isEmpty) {
       return 'Please enter a server IP address or base URL';
     }
@@ -241,6 +244,11 @@ class AppConfig {
 
     if (hasAnyScheme && !hasHttpScheme) {
       return 'URL must use http:// or https://';
+    }
+
+    final mustUseHttps = requireHttps ?? kReleaseMode;
+    if (mustUseHttps && !lower.startsWith('https://')) {
+      return 'Production builds require https:// URLs';
     }
 
     final candidate = hasHttpScheme ? trimmed : 'http://$trimmed';
@@ -290,11 +298,17 @@ class AppConfig {
 
     final persistedCustomUrl =
         customBaseUrlOverride ?? AppConfigStorage.getCustomBaseUrl();
-    final hasCustom =
-        persistedCustomUrl != null && persistedCustomUrl.trim().isNotEmpty;
+    final normalizedCustom =
+        (persistedCustomUrl != null && persistedCustomUrl.trim().isNotEmpty)
+            ? normalizeBaseUrl(persistedCustomUrl)
+            : null;
+    final requiresHttps = activeEnv == AppEnvironment.production || kReleaseMode;
+    final hasCustom = normalizedCustom != null &&
+        (!requiresHttps ||
+            normalizedCustom.toLowerCase().startsWith('https://'));
 
     final resolvedBaseUrl = hasCustom
-        ? normalizeBaseUrl(persistedCustomUrl)
+        ? normalizedCustom
         : resolveDefaultBaseUrl(activeEnv);
 
     const geminiApiKey = String.fromEnvironment(
@@ -307,13 +321,17 @@ class AppConfig {
       defaultValue: false,
     );
 
+    const explicitAiUrl =
+        String.fromEnvironment('AI_SERVICE_URL', defaultValue: '');
+
     return AppConfig(
       environment: activeEnv,
       apiBaseUrl: resolvedBaseUrl,
       customBaseUrl: hasCustom ? resolvedBaseUrl : null,
       authServiceUrl: resolvedBaseUrl,
       careServiceUrl: resolvedBaseUrl,
-      aiServiceUrl: resolvedBaseUrl,
+      aiServiceUrl:
+          explicitAiUrl.isNotEmpty ? normalizeBaseUrl(explicitAiUrl) : resolvedBaseUrl,
       geminiApiKey: geminiApiKey,
       useMockData: useMockData,
     );
@@ -368,6 +386,11 @@ class AppConfigNotifier extends StateNotifier<AppConfig> {
 
   Future<void> setCustomBaseUrl(String url) async {
     final normalized = AppConfig.normalizeBaseUrl(url);
+    final requiresHttps =
+        state.environment == AppEnvironment.production || kReleaseMode;
+    if (requiresHttps && !normalized.toLowerCase().startsWith('https://')) {
+      throw ArgumentError('Production builds require https:// URLs');
+    }
     await AppConfigStorage.saveCustomBaseUrl(normalized);
     state = state.copyWith(
       apiBaseUrl: normalized,
