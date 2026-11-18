@@ -462,6 +462,222 @@ class HttpCareTasksRepository implements CareTasksRepository {
     }
   }
 
+  @override
+  Future<RegimenBatchJob> enqueueWeeklyRegimen({
+    required Resident resident,
+    DateTime? weekStartDate,
+    String? refinementInstruction,
+    bool autoApply = false,
+  }) async {
+    final fixtureId = ResidentFixtures.toFixtureId(resident.id);
+    final patientUuid = ResidentFixtures.toBackendUuid(resident.id);
+    final start = (weekStartDate ?? DateTime.now().toUtc())
+        .toIso8601String()
+        .substring(0, 10);
+
+    try {
+      final res = await _apiClient.post(
+        '/activities/plan/jobs',
+        timeout: AppConfig.batchRequestTimeout,
+        body: {
+          'patient_id': patientUuid,
+          'week_start_date': start,
+          if (resident.cognitiveCapability != null)
+            'cognitive_capability': resident.cognitiveCapability,
+          if (resident.physicalCapability != null)
+            'physical_capability': resident.physicalCapability,
+          if (resident.cognitiveStage != null)
+            'cognitive_stage': resident.cognitiveStage,
+          if (resident.motorLimitations.isNotEmpty)
+            'motor_limitations': resident.motorLimitations,
+          if (refinementInstruction != null && refinementInstruction.isNotEmpty)
+            'refinement_instruction': refinementInstruction,
+          'auto_apply': autoApply,
+        },
+      );
+      if (res is Map<String, dynamic>) {
+        return _mapBatchJobResponse(res, fixtureId);
+      }
+      throw const RegimenGateException(502, 'Unexpected response queueing regimen job.');
+    } on ApiException catch (e) {
+      if (e.statusCode == 409) {
+        final activeRaw = e.body?['active_job'];
+        final activeJob = activeRaw is Map<String, dynamic>
+            ? _mapBatchJobResponse(activeRaw, fixtureId)
+            : null;
+        throw RegimenBatchConflictException(e.message, activeJob: activeJob);
+      }
+      throw RegimenGateException(e.statusCode, e.message);
+    } catch (e) {
+      if (e is RegimenBatchConflictException) rethrow;
+      if (kDebugMode) {
+        debugPrint('[HttpCareTasksRepository] enqueueWeeklyRegimen error: $e');
+      }
+      throw const RegimenGateException(
+        503,
+        'Unable to reach care service to queue regimen. Please try again.',
+      );
+    }
+  }
+
+  @override
+  Future<RegimenBatchJob> enqueueRefinement({
+    required String residentId,
+    required String planId,
+    required String instruction,
+    DateTime? weekStartDate,
+  }) async {
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    if (!planId.contains('-')) {
+      return _fallback.enqueueRefinement(
+        residentId: fixtureId,
+        planId: planId,
+        instruction: instruction,
+        weekStartDate: weekStartDate,
+      );
+    }
+    try {
+      final res = await _apiClient.post(
+        '/activities/plan/$planId/refine/jobs',
+        timeout: AppConfig.batchRequestTimeout,
+        body: {
+          'refinement_instruction': instruction,
+          if (weekStartDate != null)
+            'week_start_date': weekStartDate.toIso8601String().substring(0, 10),
+        },
+      );
+      if (res is Map<String, dynamic>) {
+        return _mapBatchJobResponse(res, fixtureId);
+      }
+      throw const RegimenGateException(502, 'Unexpected response queueing refinement job.');
+    } on ApiException catch (e) {
+      if (e.statusCode == 409) {
+        final activeRaw = e.body?['active_job'];
+        final activeJob = activeRaw is Map<String, dynamic>
+            ? _mapBatchJobResponse(activeRaw, fixtureId)
+            : null;
+        throw RegimenBatchConflictException(e.message, activeJob: activeJob);
+      }
+      throw RegimenGateException(e.statusCode, e.message);
+    } catch (e) {
+      if (e is RegimenBatchConflictException) rethrow;
+      if (kDebugMode) {
+        debugPrint('[HttpCareTasksRepository] enqueueRefinement error: $e');
+      }
+      throw const RegimenGateException(
+        503,
+        'Unable to reach care service to queue refinement. Please try again.',
+      );
+    }
+  }
+
+  @override
+  Future<RegimenBatchJob?> getActiveBatchJob(String residentId) async {
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    final patientUuid = ResidentFixtures.toBackendUuid(residentId);
+    final res = await _apiClient.get(
+      '/activities/plan/jobs/active',
+      queryParameters: {'patient_id': patientUuid},
+    );
+    if (res is Map<String, dynamic>) {
+      final rawJob = res['job'];
+      if (rawJob is Map<String, dynamic>) {
+        return _mapBatchJobResponse(rawJob, fixtureId);
+      }
+      return null;
+    }
+    return null;
+  }
+
+  @override
+  Future<RegimenBatchJob> getBatchJob(String residentId, String jobId) async {
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    final res = await _apiClient.get('/activities/plan/jobs/$jobId');
+    if (res is Map<String, dynamic>) {
+      return _mapBatchJobResponse(res, fixtureId);
+    }
+    throw const RegimenGateException(502, 'Unexpected batch job response.');
+  }
+
+  @override
+  Future<RegimenBatchJob> cancelBatchJob(String residentId, String jobId) async {
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    try {
+      final res = await _apiClient.post(
+        '/activities/plan/jobs/$jobId/cancel',
+        timeout: AppConfig.batchRequestTimeout,
+      );
+      if (res is Map<String, dynamic>) {
+        return _mapBatchJobResponse(res, fixtureId);
+      }
+      throw const RegimenGateException(502, 'Unexpected cancel response.');
+    } on ApiException catch (e) {
+      throw RegimenGateException(e.statusCode, e.message);
+    }
+  }
+
+  @override
+  Future<RegimenBatchJob> dismissBatchJob(String residentId, String jobId) async {
+    final fixtureId = ResidentFixtures.toFixtureId(residentId);
+    try {
+      final res = await _apiClient.post(
+        '/activities/plan/jobs/$jobId/dismiss',
+        timeout: AppConfig.batchRequestTimeout,
+      );
+      if (res is Map<String, dynamic>) {
+        return _mapBatchJobResponse(res, fixtureId);
+      }
+      throw const RegimenGateException(502, 'Unexpected dismiss response.');
+    } on ApiException catch (e) {
+      throw RegimenGateException(e.statusCode, e.message);
+    }
+  }
+
+  @override
+  Future<RegimenPlan> applyImmediateBaseline({
+    required Resident resident,
+    DateTime? weekStartDate,
+    bool autoApply = true,
+  }) async {
+    final fixtureId = ResidentFixtures.toFixtureId(resident.id);
+    final patientUuid = ResidentFixtures.toBackendUuid(resident.id);
+    final start = (weekStartDate ?? DateTime.now().toUtc())
+        .toIso8601String()
+        .substring(0, 10);
+    try {
+      final res = await _apiClient.post(
+        '/activities/plan/baseline',
+        timeout: AppConfig.batchRequestTimeout,
+        body: {
+          'patient_id': patientUuid,
+          'week_start_date': start,
+          'auto_apply': autoApply,
+        },
+      );
+      if (res is Map<String, dynamic>) {
+        return _mapPlanResponse(res, fixtureId);
+      }
+      throw const RegimenGateException(502, 'Unexpected baseline response.');
+    } on ApiException catch (e) {
+      throw RegimenGateException(e.statusCode, e.message);
+    }
+  }
+
+  RegimenBatchJob _mapBatchJobResponse(
+    Map<String, dynamic> json,
+    String fixtureId,
+  ) {
+    final rawPlan = json['plan'];
+    final mappedPlan = rawPlan is Map<String, dynamic>
+        ? _mapPlanResponse(rawPlan, fixtureId)
+        : null;
+    return RegimenBatchJob.fromJson(
+      json,
+      residentId: fixtureId,
+      mappedPlan: mappedPlan,
+    );
+  }
+
   RegimenPlan _mapPlanResponse(Map<String, dynamic> json, String fixtureId) {
     final rawItems = (json['items'] as List<dynamic>?) ?? const [];
     final mappedItems = rawItems

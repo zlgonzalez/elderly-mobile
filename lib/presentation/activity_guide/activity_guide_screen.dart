@@ -4,7 +4,10 @@ import '../../core/theme/app_colors.dart';
 import '../../domain/entities/montessori_activity.dart';
 import '../auth/auth_provider.dart';
 import '../care_tasks/care_tasks_provider.dart';
+import '../care_tasks/regimen_batch_provider.dart';
 import '../care_tasks/regimen_flow_helper.dart';
+import '../care_tasks/widgets/regimen_batch_banner.dart';
+import '../family_portal/resident_provider.dart';
 import '../shared/resident_header.dart';
 import '../shared/ask_kubo_floating_button.dart';
 import 'montessori_provider.dart';
@@ -21,8 +24,12 @@ class ActivityGuideScreen extends ConsumerWidget {
     final notifier = ref.read(montessoriProvider.notifier);
     final user = ref.watch(authProvider).user;
     final canManageRegimen = canManageRegimenFor(user);
+    final residentId = ref.watch(residentProvider.select((r) => r.id));
+    final batchState = ref.watch(regimenBatchProvider);
     final isGenerating =
-        ref.watch(careTasksProvider.select((s) => s.isGenerating));
+        ref.watch(careTasksProvider.select((s) => s.isGenerating)) ||
+            batchState.hasActiveJobFor(residentId) ||
+            batchState.isSubmitting;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -74,6 +81,8 @@ class ActivityGuideScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+
+            if (canManageRegimen) const RegimenBatchBanner(),
 
             // Search Bar & Category Filters
             Padding(

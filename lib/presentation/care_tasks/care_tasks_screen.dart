@@ -4,11 +4,14 @@ import '../../core/theme/app_colors.dart';
 import '../../domain/entities/care_task.dart';
 import '../../domain/entities/regimen_plan.dart';
 import '../auth/auth_provider.dart';
+import '../family_portal/resident_provider.dart';
 import '../shared/resident_header.dart';
 import '../shared/ask_kubo_floating_button.dart';
 import 'care_tasks_provider.dart';
+import 'regimen_batch_provider.dart';
 import 'regimen_flow_helper.dart';
 import 'widgets/add_task_sheet.dart';
+import 'widgets/regimen_batch_banner.dart';
 
 class CareTasksScreen extends ConsumerWidget {
   final VoidCallback? onAskKuboTap;
@@ -192,6 +195,10 @@ class CareTasksScreen extends ConsumerWidget {
     final notifier = ref.read(careTasksProvider.notifier);
     final user = ref.watch(authProvider).user;
     final canManageRegimen = canManageRegimenFor(user);
+    final residentId = ref.watch(residentProvider.select((r) => r.id));
+    final batchState = ref.watch(regimenBatchProvider);
+    final hasActiveBatch =
+        batchState.hasActiveJobFor(residentId) || batchState.isSubmitting;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -271,7 +278,7 @@ class CareTasksScreen extends ConsumerWidget {
                         runSpacing: 6,
                         children: [
                           OutlinedButton.icon(
-                            onPressed: taskState.isGenerating
+                            onPressed: (taskState.isGenerating || hasActiveBatch)
                                 ? null
                                 : () => _startGenerateRegimen(context, ref),
                             icon: const Icon(Icons.auto_awesome, size: 15),
@@ -285,7 +292,7 @@ class CareTasksScreen extends ConsumerWidget {
                           ),
                           if (taskState.latestAppliedPlan != null)
                             OutlinedButton.icon(
-                              onPressed: taskState.isGenerating
+                              onPressed: (taskState.isGenerating || hasActiveBatch)
                                   ? null
                                   : () => _startGenerateRegimen(
                                         context,
@@ -308,6 +315,8 @@ class CareTasksScreen extends ConsumerWidget {
                 ),
               ),
             ),
+
+            if (canManageRegimen) const RegimenBatchBanner(),
 
             // Category Filter Row
             SingleChildScrollView(
