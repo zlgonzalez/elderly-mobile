@@ -44,6 +44,27 @@ abstract class CareTasksRepository {
     DateTime? weekStartDate,
     bool acknowledgeLowScore = false,
   });
+  Future<RegimenBatchJob> enqueueWeeklyRegimen({
+    required Resident resident,
+    DateTime? weekStartDate,
+    String? refinementInstruction,
+    bool autoApply = false,
+  });
+  Future<RegimenBatchJob> enqueueRefinement({
+    required String residentId,
+    required String planId,
+    required String instruction,
+    DateTime? weekStartDate,
+  });
+  Future<RegimenBatchJob?> getActiveBatchJob(String residentId);
+  Future<RegimenBatchJob> getBatchJob(String residentId, String jobId);
+  Future<RegimenBatchJob> cancelBatchJob(String residentId, String jobId);
+  Future<RegimenBatchJob> dismissBatchJob(String residentId, String jobId);
+  Future<RegimenPlan> applyImmediateBaseline({
+    required Resident resident,
+    DateTime? weekStartDate,
+    bool autoApply = true,
+  });
 }
 
 final careTasksRepositoryProvider = Provider<CareTasksRepository>((ref) {

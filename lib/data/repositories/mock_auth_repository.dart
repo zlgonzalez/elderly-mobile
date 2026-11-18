@@ -34,10 +34,21 @@ class MockAuthRepository implements AuthRepository {
     linkedResidentId: 'res_dorothy',
   );
 
+  static const UserProfile nurseJane = UserProfile(
+    id: 'user_caregiver',
+    username: 'caregiver',
+    fullName: 'Nurse Jane',
+    role: UserRole.visitingCaregiver,
+    relation: 'Visiting Nurse',
+    phone: '555-0999',
+    linkedResidentId: 'res_margaret',
+  );
+
   static const List<UserProfile> demoProfiles = [
     sarahThompson,
     lisaChen,
     jamesWilliams,
+    nurseJane,
   ];
 
   @override
@@ -45,8 +56,12 @@ class MockAuthRepository implements AuthRepository {
   // TODO(microservice): Replace mock data with: final res = await apiClient.post('/api/v1/auth/login', body: {'username': username, 'password': password});
   Future<UserProfile?> loginWithCredentials(String username, String password) async {
     await Future.delayed(const Duration(milliseconds: 150));
+    final clean = username.toLowerCase().trim();
     final match = demoProfiles.firstWhere(
-      (p) => p.username.toLowerCase() == username.toLowerCase().trim(),
+      (p) =>
+          p.username.toLowerCase() == clean ||
+          p.id.toLowerCase() == clean ||
+          '${p.username.toLowerCase()}@kubocare.com' == clean,
       orElse: () => UserProfile(
         id: 'user_custom',
         username: username,

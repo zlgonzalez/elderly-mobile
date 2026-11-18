@@ -358,9 +358,11 @@ class ApiClient {
       return null;
     } else {
       String message = 'HTTP ${response.statusCode}';
+      Map<String, dynamic>? decodedBody;
       try {
         final decoded = jsonDecode(response.body);
         if (decoded is Map<String, dynamic>) {
+          decodedBody = decoded;
           message = decoded['error'] ?? decoded['message'] ?? response.body;
         }
       } catch (_) {
@@ -371,6 +373,7 @@ class ApiClient {
       throw ApiException(
         statusCode: response.statusCode,
         message: message,
+        body: decodedBody,
       );
     }
   }
@@ -379,8 +382,13 @@ class ApiClient {
 class ApiException implements Exception {
   final int statusCode;
   final String message;
+  final Map<String, dynamic>? body;
 
-  const ApiException({required this.statusCode, required this.message});
+  const ApiException({
+    required this.statusCode,
+    required this.message,
+    this.body,
+  });
 
   @override
   String toString() => 'ApiException: $statusCode ($message)';

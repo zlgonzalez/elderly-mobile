@@ -12,6 +12,207 @@ enum RegimenGenerationPhase {
   final String title;
   final String description;
   const RegimenGenerationPhase(this.title, this.description);
+
+  static RegimenGenerationPhase fromString(String? value) {
+    switch (value?.toLowerCase().trim()) {
+      case 'retrieval':
+        return RegimenGenerationPhase.retrieval;
+      case 'synthesis':
+        return RegimenGenerationPhase.synthesis;
+      case 'refinement':
+        return RegimenGenerationPhase.refinement;
+      case 'scoring':
+        return RegimenGenerationPhase.scoring;
+      case 'completed':
+        return RegimenGenerationPhase.completed;
+      case 'idle':
+      default:
+        return RegimenGenerationPhase.idle;
+    }
+  }
+}
+
+enum BatchJobType {
+  generation('generation'),
+  refinement('refinement');
+
+  final String wireValue;
+  const BatchJobType(this.wireValue);
+
+  static BatchJobType fromString(String? value) {
+    switch (value?.toLowerCase().trim()) {
+      case 'refinement':
+        return BatchJobType.refinement;
+      case 'generation':
+      default:
+        return BatchJobType.generation;
+    }
+  }
+}
+
+enum BatchJobStatus {
+  queued('queued'),
+  inProgress('in_progress'),
+  completed('completed'),
+  failed('failed'),
+  canceled('canceled');
+
+  final String wireValue;
+  const BatchJobStatus(this.wireValue);
+
+  bool get isActive =>
+      this == BatchJobStatus.queued || this == BatchJobStatus.inProgress;
+  bool get isTerminal => !isActive;
+
+  static BatchJobStatus fromString(String? value) {
+    switch (value?.toLowerCase().trim()) {
+      case 'queued':
+        return BatchJobStatus.queued;
+      case 'in_progress':
+        return BatchJobStatus.inProgress;
+      case 'completed':
+        return BatchJobStatus.completed;
+      case 'failed':
+        return BatchJobStatus.failed;
+      case 'canceled':
+        return BatchJobStatus.canceled;
+      default:
+        return BatchJobStatus.queued;
+    }
+  }
+}
+
+class RegimenBatchJob {
+  final String id;
+  final String residentId;
+  final String requestedBy;
+  final BatchJobType jobType;
+  final BatchJobStatus status;
+  final RegimenGenerationPhase phase;
+  final String? targetPlanId;
+  final String? planId;
+  final RegimenPlan? plan;
+  final DateTime weekStartDate;
+  final String? refinementInstruction;
+  final bool autoApply;
+  final int retryCount;
+  final String? errorMessage;
+  final DateTime createdAt;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+  final DateTime? dismissedAt;
+  final DateTime updatedAt;
+
+  const RegimenBatchJob({
+    required this.id,
+    required this.residentId,
+    required this.requestedBy,
+    required this.jobType,
+    required this.status,
+    required this.phase,
+    this.targetPlanId,
+    this.planId,
+    this.plan,
+    required this.weekStartDate,
+    this.refinementInstruction,
+    this.autoApply = false,
+    this.retryCount = 0,
+    this.errorMessage,
+    required this.createdAt,
+    this.startedAt,
+    this.completedAt,
+    this.dismissedAt,
+    required this.updatedAt,
+  });
+
+  bool get isActive => status.isActive;
+  bool get isCompleted => status == BatchJobStatus.completed;
+  bool get isFailed => status == BatchJobStatus.failed;
+
+  RegimenBatchJob copyWith({
+    BatchJobStatus? status,
+    RegimenGenerationPhase? phase,
+    String? planId,
+    RegimenPlan? plan,
+    int? retryCount,
+    String? errorMessage,
+    DateTime? startedAt,
+    DateTime? completedAt,
+    DateTime? dismissedAt,
+    DateTime? updatedAt,
+  }) {
+    return RegimenBatchJob(
+      id: id,
+      residentId: residentId,
+      requestedBy: requestedBy,
+      jobType: jobType,
+      status: status ?? this.status,
+      phase: phase ?? this.phase,
+      targetPlanId: targetPlanId,
+      planId: planId ?? this.planId,
+      plan: plan ?? this.plan,
+      weekStartDate: weekStartDate,
+      refinementInstruction: refinementInstruction,
+      autoApply: autoApply,
+      retryCount: retryCount ?? this.retryCount,
+      errorMessage: errorMessage ?? this.errorMessage,
+      createdAt: createdAt,
+      startedAt: startedAt ?? this.startedAt,
+      completedAt: completedAt ?? this.completedAt,
+      dismissedAt: dismissedAt ?? this.dismissedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  factory RegimenBatchJob.fromJson(
+    Map<String, dynamic> json, {
+    required String residentId,
+    RegimenPlan? mappedPlan,
+  }) {
+    final startStr = json['week_start_date']?.toString();
+    final createdStr = json['created_at']?.toString();
+    final startedStr = json['started_at']?.toString();
+    final completedStr = json['completed_at']?.toString();
+    final dismissedStr = json['dismissed_at']?.toString();
+    final updatedStr = json['updated_at']?.toString();
+    return RegimenBatchJob(
+      id: json['id']?.toString() ?? '',
+      residentId: residentId,
+      requestedBy: json['requested_by']?.toString() ?? '',
+      jobType: BatchJobType.fromString(json['job_type'] as String?),
+      status: BatchJobStatus.fromString(json['status'] as String?),
+      phase: RegimenGenerationPhase.fromString(json['phase'] as String?),
+      targetPlanId: json['target_plan_id'] as String?,
+      planId: json['plan_id'] as String?,
+      plan: mappedPlan,
+      weekStartDate: startStr != null
+          ? (DateTime.tryParse(startStr) ?? DateTime.now().toUtc())
+          : DateTime.now().toUtc(),
+      refinementInstruction: json['refinement_instruction'] as String?,
+      autoApply: json['auto_apply'] as bool? ?? false,
+      retryCount: (json['retry_count'] as num?)?.toInt() ?? 0,
+      errorMessage: json['error_message'] as String?,
+      createdAt: createdStr != null
+          ? (DateTime.tryParse(createdStr) ?? DateTime.now().toUtc())
+          : DateTime.now().toUtc(),
+      startedAt: startedStr != null ? DateTime.tryParse(startedStr) : null,
+      completedAt: completedStr != null ? DateTime.tryParse(completedStr) : null,
+      dismissedAt: dismissedStr != null ? DateTime.tryParse(dismissedStr) : null,
+      updatedAt: updatedStr != null
+          ? (DateTime.tryParse(updatedStr) ?? DateTime.now().toUtc())
+          : DateTime.now().toUtc(),
+    );
+  }
+}
+
+class RegimenBatchConflictException implements Exception {
+  final String message;
+  final RegimenBatchJob? activeJob;
+
+  const RegimenBatchConflictException(this.message, {this.activeJob});
+
+  @override
+  String toString() => message;
 }
 
 enum RegimenGenerationSource {

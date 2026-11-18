@@ -14,12 +14,12 @@ import '../../presentation/health_vitals/health_vitals_screen.dart';
 import '../../presentation/activity_guide/activity_guide_screen.dart';
 import '../../presentation/ai_assistant/ai_assistant_drawer.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     routes: [
       GoRoute(
         path: '/',
@@ -31,7 +31,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/story',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const TheirStoryScreen(),
       ),
       StatefulShellRoute.indexedStack(

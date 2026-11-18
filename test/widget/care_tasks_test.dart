@@ -8,8 +8,10 @@ import 'package:elderly_mobile/domain/entities/care_task.dart';
 import 'package:elderly_mobile/domain/entities/regimen_plan.dart';
 import 'package:elderly_mobile/domain/entities/resident.dart';
 import 'package:elderly_mobile/domain/entities/user_profile.dart';
+import 'package:elderly_mobile/presentation/activity_guide/activity_guide_screen.dart';
 import 'package:elderly_mobile/presentation/auth/auth_provider.dart';
 import 'package:elderly_mobile/presentation/care_tasks/care_tasks_screen.dart';
+import 'package:elderly_mobile/presentation/care_tasks/widgets/regimen_batch_banner.dart';
 import 'package:elderly_mobile/presentation/family_portal/resident_provider.dart';
 import '../platform/platform_harness.dart';
 
@@ -161,6 +163,15 @@ void main() {
       'Independent mobility; seated comfort',
     );
     await tester.tap(find.text('Save & Generate Plan'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byType(RegimenBatchBanner), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Review Plan'));
     await tester.pumpAndSettle();
 
     expect(find.text('7-Day Montessori Regimen Preview'), findsOneWidget);
@@ -206,6 +217,15 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Generate 7-Day Regimen'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byType(RegimenBatchBanner), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Review Plan'));
     await tester.pumpAndSettle();
 
     expect(find.text('7-Day Montessori Regimen Preview'), findsOneWidget);
@@ -224,6 +244,123 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(lowScoreRepo.appliedWithAck, isTrue);
+  });
+
+  testWidgets('RegimenBatchBanner supports Cancel on active job and Retry / Baseline / Dismiss on failed job', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final repo = MockCareTasksRepository()..simulateNextBatchFailure = true;
+    const caregiverUser = UserProfile(
+      id: 'cg_banner',
+      username: 'caregiver',
+      fullName: 'Nurse Jane',
+      role: UserRole.visitingCaregiver,
+      relation: 'Caregiver',
+      phone: '555-0102',
+      linkedResidentId: 'res_margaret',
+    );
+
+    await tester.pumpWidget(
+      createPlatformTestWidget(
+        overrides: [
+          authProvider.overrideWith(
+            (ref) => AuthNotifier(
+              MockAuthRepository(),
+              const AuthState(user: caregiverUser),
+            ),
+          ),
+          careTasksRepositoryProvider.overrideWithValue(repo),
+        ],
+        child: const CareTasksScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Start job -> fails after simulated steps
+    await tester.tap(find.text('Generate 7-Day Regimen'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.byType(RegimenBatchBanner), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+
+    // Wait for failure
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Use Clinical Baseline Schedule'), findsOneWidget);
+    expect(find.byTooltip('Dismiss'), findsOneWidget);
+
+    // Tap Retry -> succeeds now that simulateNextBatchFailure reset to false
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Cancel'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    expect(find.text('Review Plan'), findsOneWidget);
+
+    // Dismiss completed banner
+    await tester.tap(find.byTooltip('Dismiss'));
+    await tester.pumpAndSettle();
+    expect(find.text('Review Plan'), findsNothing);
+  });
+
+  testWidgets('ActivityGuideScreen displays RegimenBatchBanner and supports Use Clinical Baseline Schedule', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final repo = MockCareTasksRepository()..simulateNextBatchFailure = true;
+    const caregiverUser = UserProfile(
+      id: 'cg_guide',
+      username: 'caregiver',
+      fullName: 'Nurse Jane',
+      role: UserRole.visitingCaregiver,
+      relation: 'Caregiver',
+      phone: '555-0102',
+      linkedResidentId: 'res_margaret',
+    );
+
+    await tester.pumpWidget(
+      createPlatformTestWidget(
+        overrides: [
+          authProvider.overrideWith(
+            (ref) => AuthNotifier(
+              MockAuthRepository(),
+              const AuthState(user: caregiverUser),
+            ),
+          ),
+          careTasksRepositoryProvider.overrideWithValue(repo),
+        ],
+        child: const ActivityGuideScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Generate 7-Day Regimen'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byType(RegimenBatchBanner), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Use Clinical Baseline Schedule'), findsOneWidget);
+    await tester.tap(find.text('Use Clinical Baseline Schedule'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Use Clinical Baseline Schedule'), findsNothing);
   });
 }
 

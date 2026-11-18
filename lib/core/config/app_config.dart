@@ -132,7 +132,13 @@ class AppConfig {
   bool get isCustomUrlActive =>
       customBaseUrl != null && customBaseUrl!.trim().isNotEmpty;
 
-  /// Timeout budget for personalized AI regimen generation & refinement requests.
+  /// Standard timeout for enqueueing/polling asynchronous regimen batch jobs.
+  static const Duration batchRequestTimeout = Duration(seconds: 15);
+
+  /// Active-job polling cadence while a resident has an in-flight batch job.
+  static const Duration batchPollInterval = Duration(seconds: 3);
+
+  /// Legacy synchronous timeout budget (no longer used by async batch enqueue/refine).
   static const Duration regimenRequestTimeout = Duration(seconds: 75);
 
   /// The default platform base URL for the current environment (ignoring custom overrides).

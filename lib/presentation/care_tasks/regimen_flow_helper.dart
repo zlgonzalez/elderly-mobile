@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/user_profile.dart';
 import '../family_portal/resident_provider.dart';
-import 'care_tasks_provider.dart';
+import 'regimen_batch_provider.dart';
 import 'widgets/capability_intake_sheet.dart';
-import 'widgets/generation_progress_sheet.dart';
-import 'widgets/regimen_preview_sheet.dart';
 
 bool canManageRegimenFor(UserProfile? user) {
   return user != null &&
@@ -43,44 +41,36 @@ Future<void> startGenerateRegimenFlow(
   }
   if (!context.mounted) return;
 
-  final navigator = Navigator.of(context);
-  var progressSheetOpen = true;
-  showModalBottomSheet<void>(
-    context: context,
-    isDismissible: false,
-    enableDrag: false,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) => GenerationProgressSheet(resident: resident),
-  ).whenComplete(() {
-    progressSheetOpen = false;
-  });
+  final batchState = ref.read(regimenBatchProvider);
+  if (batchState.hasActiveJobFor(resident.id)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'A regimen generation job is already running for this resident.',
+        ),
+      ),
+    );
+    return;
+  }
 
   try {
-    final plan = await ref.read(careTasksProvider.notifier).generateRegimen(
-          resident: resident,
-          autoApply: false,
-        );
-    if (progressSheetOpen && navigator.canPop()) {
-      navigator.pop();
-    }
+    final job = await ref
+        .read(regimenBatchProvider.notifier)
+        .enqueueGeneration(resident);
     if (!context.mounted) return;
-    if (plan != null) {
-      await showModalBottomSheet<bool>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (ctx) => RegimenPreviewSheet(
-          showRefinementInitially: openRefine,
+    if (job != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Started background 7-day regimen generation for ${resident.name}. You can keep using the app.',
+          ),
         ),
       );
     }
   } catch (e) {
-    if (progressSheetOpen && navigator.canPop()) {
-      navigator.pop();
-    }
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Could not generate regimen: $e')),
+      SnackBar(content: Text('Could not start regimen generation: $e')),
     );
   }
 }

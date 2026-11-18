@@ -27,6 +27,9 @@ void main() async {
   );
 }
 
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 class MontessoriCareApp extends ConsumerWidget {
   const MontessoriCareApp({super.key});
 
@@ -36,6 +39,7 @@ class MontessoriCareApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Montessori Care App',
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
       theme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,
       scrollBehavior: const AppScrollBehavior(),

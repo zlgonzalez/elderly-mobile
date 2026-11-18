@@ -19,8 +19,13 @@ class RegimenGateException implements Exception {
 class MockCareTasksRepository implements CareTasksRepository {
   final Map<String, List<CareTask>> _store = {};
   final Map<String, RegimenPlan> _plans = {};
+  final Map<String, RegimenBatchJob> _batchJobs = {};
+  final Duration batchStepDelay;
+  bool simulateNextBatchFailure = false;
 
-  MockCareTasksRepository() {
+  MockCareTasksRepository({
+    this.batchStepDelay = const Duration(milliseconds: 120),
+  }) {
     _initDefaultTasks();
   }
 
@@ -788,6 +793,278 @@ class MockCareTasksRepository implements CareTasksRepository {
       items: plan.items,
     );
     _plans[planId] = applied;
+    final now = DateTime.now().toUtc();
+    _batchJobs.updateAll((_, job) {
+      if (job.residentId == key &&
+          (job.isCompleted || job.isFailed) &&
+          job.dismissedAt == null) {
+        return job.copyWith(dismissedAt: now, updatedAt: now);
+      }
+      return job;
+    });
     return applied;
+  }
+
+  @override
+  Future<RegimenBatchJob> enqueueWeeklyRegimen({
+    required Resident resident,
+    DateTime? weekStartDate,
+    String? refinementInstruction,
+    bool autoApply = false,
+  }) async {
+    final key = ResidentFixtures.toFixtureId(resident.id);
+    final active = await getActiveBatchJob(key);
+    if (active != null && active.isActive) {
+      throw RegimenBatchConflictException(
+        'An active regimen batch job already exists for this resident.',
+        activeJob: active,
+      );
+    }
+
+    final now = DateTime.now().toUtc();
+    _dismissTerminalJobsForResident(key, now);
+
+    final jobId = 'job_${now.microsecondsSinceEpoch}';
+    final job = RegimenBatchJob(
+      id: jobId,
+      residentId: key,
+      requestedBy: 'mock_caregiver',
+      jobType: BatchJobType.generation,
+      status: BatchJobStatus.queued,
+      phase: RegimenGenerationPhase.retrieval,
+      weekStartDate: weekStartDate ?? now,
+      refinementInstruction: refinementInstruction,
+      autoApply: autoApply,
+      createdAt: now,
+      updatedAt: now,
+    );
+    _batchJobs[jobId] = job;
+    _runMockBatchJob(jobId, resident: resident);
+    return job;
+  }
+
+  @override
+  Future<RegimenBatchJob> enqueueRefinement({
+    required String residentId,
+    required String planId,
+    required String instruction,
+    DateTime? weekStartDate,
+  }) async {
+    final key = ResidentFixtures.toFixtureId(residentId);
+    final active = await getActiveBatchJob(key);
+    if (active != null && active.isActive) {
+      throw RegimenBatchConflictException(
+        'An active regimen batch job already exists for this resident.',
+        activeJob: active,
+      );
+    }
+
+    final now = DateTime.now().toUtc();
+    _dismissTerminalJobsForResident(key, now);
+
+    final jobId = 'job_${now.microsecondsSinceEpoch}';
+    final resident = ResidentFixtures.findById(key);
+    final job = RegimenBatchJob(
+      id: jobId,
+      residentId: key,
+      requestedBy: 'mock_caregiver',
+      jobType: BatchJobType.refinement,
+      status: BatchJobStatus.queued,
+      phase: RegimenGenerationPhase.retrieval,
+      targetPlanId: planId,
+      weekStartDate: weekStartDate ?? _plans[planId]?.weekStartDate ?? now,
+      refinementInstruction: instruction,
+      autoApply: false,
+      createdAt: now,
+      updatedAt: now,
+    );
+    _batchJobs[jobId] = job;
+    _runMockBatchJob(jobId, resident: resident);
+    return job;
+  }
+
+  void _dismissTerminalJobsForResident(String key, DateTime now) {
+    _batchJobs.updateAll((_, job) {
+      if (job.residentId == key &&
+          (job.isCompleted || job.isFailed) &&
+          job.dismissedAt == null) {
+        return job.copyWith(dismissedAt: now, updatedAt: now);
+      }
+      return job;
+    });
+  }
+
+  Future<void> _runMockBatchJob(
+    String jobId, {
+    required Resident resident,
+  }) async {
+    final shouldFail = simulateNextBatchFailure;
+    simulateNextBatchFailure = false;
+
+    await Future<void>.delayed(batchStepDelay);
+    var current = _batchJobs[jobId];
+    if (current == null || !current.isActive) return;
+
+    final started = DateTime.now().toUtc();
+    current = current.copyWith(
+      status: BatchJobStatus.inProgress,
+      phase: current.jobType == BatchJobType.refinement
+          ? RegimenGenerationPhase.refinement
+          : RegimenGenerationPhase.synthesis,
+      startedAt: started,
+      updatedAt: started,
+    );
+    _batchJobs[jobId] = current;
+
+    await Future<void>.delayed(batchStepDelay);
+    current = _batchJobs[jobId];
+    if (current == null || !current.isActive) return;
+
+    if (shouldFail) {
+      final failedAt = DateTime.now().toUtc();
+      _batchJobs[jobId] = current.copyWith(
+        status: BatchJobStatus.failed,
+        retryCount: 1,
+        errorMessage:
+            'Personalized regimen synthesis failed after automatic retries. You can retry or use the clinical baseline schedule.',
+        completedAt: failedAt,
+        updatedAt: failedAt,
+      );
+      return;
+    }
+
+    current = current.copyWith(
+      phase: RegimenGenerationPhase.scoring,
+      updatedAt: DateTime.now().toUtc(),
+    );
+    _batchJobs[jobId] = current;
+
+    await Future<void>.delayed(batchStepDelay);
+    current = _batchJobs[jobId];
+    if (current == null || !current.isActive) return;
+
+    final plan = await generateWeeklyRegimen(
+      resident: resident,
+      weekStartDate: current.weekStartDate,
+      refinementInstruction: current.refinementInstruction,
+      autoApply: current.autoApply,
+    );
+
+    // Late-result guard if canceled while generating
+    final latest = _batchJobs[jobId];
+    if (latest == null || !latest.isActive) return;
+
+    final doneAt = DateTime.now().toUtc();
+    _batchJobs[jobId] = latest.copyWith(
+      status: BatchJobStatus.completed,
+      phase: RegimenGenerationPhase.completed,
+      planId: plan.id,
+      plan: plan,
+      completedAt: doneAt,
+      updatedAt: doneAt,
+    );
+  }
+
+  @override
+  Future<RegimenBatchJob?> getActiveBatchJob(String residentId) async {
+    final key = ResidentFixtures.toFixtureId(residentId);
+    final cutoff = DateTime.now().toUtc().subtract(const Duration(hours: 24));
+    final matching = _batchJobs.values
+        .where((j) => j.residentId == key)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    for (final job in matching) {
+      if (job.isActive) return job;
+      if ((job.isCompleted || job.isFailed) &&
+          job.dismissedAt == null &&
+          !job.createdAt.isBefore(cutoff)) {
+        final plan = job.planId != null ? _plans[job.planId] : null;
+        if (plan != null &&
+            (plan.planStatus == 'applied' || plan.planStatus == 'superseded')) {
+          continue;
+        }
+        return job;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<RegimenBatchJob> getBatchJob(String residentId, String jobId) async {
+    final job = _batchJobs[jobId];
+    if (job == null) {
+      throw const RegimenGateException(404, 'Batch job not found');
+    }
+    return job;
+  }
+
+  @override
+  Future<RegimenBatchJob> cancelBatchJob(String residentId, String jobId) async {
+    final job = _batchJobs[jobId];
+    if (job == null) {
+      throw const RegimenGateException(404, 'Batch job not found');
+    }
+    if (!job.isActive) {
+      throw const RegimenGateException(409, 'Batch job is already terminal');
+    }
+    final now = DateTime.now().toUtc();
+    final canceled = job.copyWith(
+      status: BatchJobStatus.canceled,
+      completedAt: now,
+      updatedAt: now,
+    );
+    _batchJobs[jobId] = canceled;
+    return canceled;
+  }
+
+  @override
+  Future<RegimenBatchJob> dismissBatchJob(String residentId, String jobId) async {
+    final job = _batchJobs[jobId];
+    if (job == null) {
+      throw const RegimenGateException(404, 'Batch job not found');
+    }
+    if (job.isActive) {
+      throw const RegimenGateException(409, 'Cannot dismiss an active batch job');
+    }
+    final now = DateTime.now().toUtc();
+    final dismissed = job.copyWith(
+      dismissedAt: job.dismissedAt ?? now,
+      updatedAt: now,
+    );
+    _batchJobs[jobId] = dismissed;
+    return dismissed;
+  }
+
+  @override
+  Future<RegimenPlan> applyImmediateBaseline({
+    required Resident resident,
+    DateTime? weekStartDate,
+    bool autoApply = true,
+  }) async {
+    final key = ResidentFixtures.toFixtureId(resident.id);
+    final now = DateTime.now().toUtc();
+    _batchJobs.updateAll((_, job) {
+      if (job.residentId == key && job.isActive) {
+        return job.copyWith(
+          status: BatchJobStatus.canceled,
+          completedAt: now,
+          updatedAt: now,
+        );
+      }
+      if (job.residentId == key &&
+          (job.isCompleted || job.isFailed) &&
+          job.dismissedAt == null) {
+        return job.copyWith(dismissedAt: now, updatedAt: now);
+      }
+      return job;
+    });
+
+    return generateWeeklyRegimen(
+      resident: resident,
+      weekStartDate: weekStartDate,
+      autoApply: autoApply,
+      forceBaseline: true,
+    );
   }
 }

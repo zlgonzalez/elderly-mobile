@@ -332,6 +332,14 @@ class CareTasksNotifier extends StateNotifier<CareTasksState> {
     }
   }
 
+  void setPreviewPlanFromBatch(RegimenPlan plan) {
+    state = state.copyWith(
+      activePreviewPlan: plan,
+      generationPhase: RegimenGenerationPhase.idle,
+      clearError: true,
+    );
+  }
+
   void clearPreview() {
     state = state.copyWith(
       clearPreviewPlan: true,

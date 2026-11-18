@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:elderly_mobile/core/network/api_client.dart';
 import 'package:elderly_mobile/data/fixtures/resident_fixtures.dart';
+import 'package:elderly_mobile/data/repositories/care_tasks_repository.dart';
 import 'package:elderly_mobile/data/repositories/http_care_tasks_repository.dart';
 import 'package:elderly_mobile/data/repositories/mock_care_tasks_repository.dart';
 import 'package:elderly_mobile/domain/entities/care_task.dart';
@@ -12,6 +14,7 @@ import 'package:elderly_mobile/domain/entities/regimen_plan.dart';
 import 'package:elderly_mobile/domain/entities/resident.dart';
 import 'package:elderly_mobile/domain/entities/user_profile.dart';
 import 'package:elderly_mobile/presentation/care_tasks/care_tasks_provider.dart';
+import 'package:elderly_mobile/presentation/care_tasks/regimen_batch_provider.dart';
 
 void main() {
   group('MockCareTasksRepository Tests', () {
@@ -277,6 +280,214 @@ void main() {
       expect(notifier.state.isGenerating, isFalse);
     });
   });
+
+  group('Batch Regimen Generation Unit Tests (T012 / T013 / T022)', () {
+    test('HttpCareTasksRepository enqueues 202 batch job, throws 409 conflict, polls, cancels, dismisses, and applies baseline', () async {
+      final dorothyUuid = ResidentFixtures.toBackendUuid(ResidentFixtures.dorothyWilliams.id);
+      final mockClient = MockClient((request) async {
+        if (request.method == 'POST' && request.url.path == '/activities/plan/jobs') {
+          if (request.body.contains(dorothyUuid)) {
+            return http.Response(
+              jsonEncode({
+                'error': 'active job already exists',
+                'active_job': {
+                  'id': 'job_existing',
+                  'patient_id': dorothyUuid,
+                  'job_type': 'generation',
+                  'status': 'in_progress',
+                  'phase': 'synthesis',
+                  'created_at': '2026-11-15T10:00:00Z',
+                  'updated_at': '2026-11-15T10:00:00Z',
+                },
+              }),
+              409,
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'id': 'job_123',
+              'patient_id': ResidentFixtures.toBackendUuid('res_margaret'),
+              'requested_by': 'cg_1',
+              'job_type': 'generation',
+              'status': 'queued',
+              'phase': 'retrieval',
+              'created_at': '2026-11-15T10:00:00Z',
+              'updated_at': '2026-11-15T10:00:00Z',
+            }),
+            202,
+          );
+        }
+        if (request.method == 'GET' && request.url.path == '/activities/plan/jobs/active') {
+          return http.Response(
+            jsonEncode({
+              'job': {
+                'id': 'job_123',
+                'patient_id': ResidentFixtures.toBackendUuid('res_margaret'),
+                'job_type': 'generation',
+                'status': 'in_progress',
+                'phase': 'synthesis',
+                'created_at': '2026-11-15T10:00:00Z',
+                'updated_at': '2026-11-15T10:00:05Z',
+              },
+            }),
+            200,
+          );
+        }
+        if (request.method == 'POST' && request.url.path == '/activities/plan/jobs/job_123/cancel') {
+          return http.Response(
+            jsonEncode({
+              'id': 'job_123',
+              'patient_id': ResidentFixtures.toBackendUuid('res_margaret'),
+              'job_type': 'generation',
+              'status': 'canceled',
+              'phase': 'synthesis',
+              'created_at': '2026-11-15T10:00:00Z',
+              'updated_at': '2026-11-15T10:00:10Z',
+            }),
+            200,
+          );
+        }
+        if (request.method == 'POST' && request.url.path == '/activities/plan/jobs/job_123/dismiss') {
+          return http.Response(
+            jsonEncode({
+              'id': 'job_123',
+              'patient_id': ResidentFixtures.toBackendUuid('res_margaret'),
+              'job_type': 'generation',
+              'status': 'completed',
+              'phase': 'completed',
+              'dismissed_at': '2026-11-15T10:01:00Z',
+              'created_at': '2026-11-15T10:00:00Z',
+              'updated_at': '2026-11-15T10:01:00Z',
+            }),
+            200,
+          );
+        }
+        if (request.method == 'POST' && request.url.path == '/activities/plan/baseline') {
+          return http.Response(
+            jsonEncode({
+              'id': 'plan_baseline',
+              'patient_id': ResidentFixtures.toBackendUuid('res_margaret'),
+              'week_start_date': '2026-11-16',
+              'generation_source': 'baseline_fallback',
+              'plan_status': 'applied',
+              'generated_at': '2026-11-15T10:02:00Z',
+              'items': [],
+            }),
+            201,
+          );
+        }
+        return http.Response('not found', 404);
+      });
+
+      final apiClient = ApiClient(baseUrl: 'http://localhost:8080', httpClient: mockClient);
+      final repo = HttpCareTasksRepository(apiClient: apiClient);
+
+      final job = await repo.enqueueWeeklyRegimen(resident: ResidentFixtures.margaretThompson);
+      expect(job.id, 'job_123');
+      expect(job.status, BatchJobStatus.queued);
+
+      expect(
+        () => repo.enqueueWeeklyRegimen(
+          resident: ResidentFixtures.dorothyWilliams,
+        ),
+        throwsA(isA<RegimenBatchConflictException>()),
+      );
+
+      final active = await repo.getActiveBatchJob('res_margaret');
+      expect(active?.status, BatchJobStatus.inProgress);
+      expect(active?.phase, RegimenGenerationPhase.synthesis);
+
+      final canceled = await repo.cancelBatchJob('res_margaret', 'job_123');
+      expect(canceled.status, BatchJobStatus.canceled);
+
+      final dismissed = await repo.dismissBatchJob('res_margaret', 'job_123');
+      expect(dismissed.dismissedAt, isNotNull);
+
+      final baseline = await repo.applyImmediateBaseline(resident: ResidentFixtures.margaretThompson);
+      expect(baseline.generationSource, RegimenGenerationSource.baselineFallback);
+      expect(baseline.planStatus, 'applied');
+    });
+
+    test('RegimenBatchNotifier polls until completion, preserves state on transient poll error, and handles retry/baseline', () async {
+      final repo = MockCareTasksRepository(batchStepDelay: const Duration(milliseconds: 20));
+      final container = ProviderContainer(
+        overrides: [
+          careTasksRepositoryProvider.overrideWithValue(repo),
+          regimenBatchProvider.overrideWith(
+            (ref) => RegimenBatchNotifier(
+              repo,
+              ref,
+              pollInterval: const Duration(milliseconds: 40),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(regimenBatchProvider.notifier);
+
+      final queued = await notifier.enqueueGeneration(ResidentFixtures.margaretThompson);
+      expect(queued, isNotNull);
+      expect(notifier.state.hasActiveJobFor('res_margaret'), isTrue);
+
+      await Future.delayed(const Duration(milliseconds: 180));
+      final completed = notifier.state.jobForResident('res_margaret');
+      expect(completed?.status, BatchJobStatus.completed);
+      expect(notifier.state.lastCompletionEvent?.residentId, 'res_margaret');
+
+      // Test failure + retry + baseline
+      repo.simulateNextBatchFailure = true;
+      await notifier.dismissJob('res_margaret');
+      await notifier.enqueueGeneration(ResidentFixtures.margaretThompson);
+      await Future.delayed(const Duration(milliseconds: 180));
+      expect(notifier.state.jobForResident('res_margaret')?.status, BatchJobStatus.failed);
+
+      await notifier.applyImmediateBaseline(ResidentFixtures.margaretThompson);
+      expect(notifier.state.jobForResident('res_margaret'), isNull);
+    });
+
+    test('RegimenBatchNotifier preserves last known active job on transient refresh error', () async {
+      final repo = _FlakyPollMockRepo(batchStepDelay: const Duration(milliseconds: 80));
+      final container = ProviderContainer(
+        overrides: [
+          careTasksRepositoryProvider.overrideWithValue(repo),
+          regimenBatchProvider.overrideWith(
+            (ref) => RegimenBatchNotifier(
+              repo,
+              ref,
+              pollInterval: const Duration(milliseconds: 30),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(regimenBatchProvider.notifier);
+
+      await notifier.enqueueGeneration(ResidentFixtures.margaretThompson);
+      repo.throwOnGetActive = true;
+      await notifier.refreshActiveJob('res_margaret');
+
+      // Must preserve active job despite transient network error
+      expect(notifier.state.jobForResident('res_margaret')?.isActive, isTrue);
+      repo.throwOnGetActive = false;
+      await Future.delayed(const Duration(milliseconds: 250));
+    });
+  });
+}
+
+class _FlakyPollMockRepo extends MockCareTasksRepository {
+  bool throwOnGetActive = false;
+
+  _FlakyPollMockRepo({super.batchStepDelay});
+
+  @override
+  Future<RegimenBatchJob?> getActiveBatchJob(String residentId) async {
+    if (throwOnGetActive) {
+      throw Exception('Transient network timeout');
+    }
+    return super.getActiveBatchJob(residentId);
+  }
 }
 
 class _SlowGenerateMockRepo extends MockCareTasksRepository {

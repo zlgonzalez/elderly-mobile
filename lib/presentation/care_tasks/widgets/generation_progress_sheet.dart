@@ -6,6 +6,8 @@ import '../../../domain/entities/regimen_plan.dart';
 import '../../../domain/entities/resident.dart';
 import '../care_tasks_provider.dart';
 
+@Deprecated(
+    'Replaced by non-blocking RegimenBatchBanner and async batch jobs')
 class GenerationProgressSheet extends ConsumerStatefulWidget {
   final Resident resident;
 

@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/repositories/mock_care_tasks_repository.dart';
 import '../../../domain/entities/regimen_plan.dart';
 import '../care_tasks_provider.dart';
+import '../regimen_batch_provider.dart';
 
 class RegimenPreviewSheet extends ConsumerStatefulWidget {
   final bool showRefinementInitially;
@@ -72,9 +73,10 @@ class _RegimenPreviewSheetState extends ConsumerState<RegimenPreviewSheet> {
       return;
     }
     try {
-      await ref.read(careTasksProvider.notifier).refineRegimen(
-            plan.id,
-            text,
+      await ref.read(regimenBatchProvider.notifier).enqueueRefinement(
+            residentId: plan.residentId,
+            planId: plan.id,
+            instruction: text,
             weekStartDate: _selectedWeekStartDate ?? plan.weekStartDate,
           );
       if (mounted) {
@@ -83,6 +85,14 @@ class _RegimenPreviewSheetState extends ConsumerState<RegimenPreviewSheet> {
           _showRefineBox = false;
           _refineCtrl.clear();
         });
+        Navigator.of(context).pop(false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Refinement started in the background. You can keep using the app.',
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -127,6 +137,9 @@ class _RegimenPreviewSheetState extends ConsumerState<RegimenPreviewSheet> {
             weekStartDate: _selectedWeekStartDate ?? plan.weekStartDate,
             acknowledgeLowScore: acknowledged,
           );
+      ref
+          .read(regimenBatchProvider.notifier)
+          .clearResidentBannerLocally(plan.residentId);
       if (mounted) {
         Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
