@@ -32,7 +32,7 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-11-11T18:19:06.500303+00:00"
+      "installed_at": "2026-11-21T23:39:59.355618+00:00"
     },
     "speckit-plan": {
       "version": "0.1.0",
@@ -47,7 +47,7 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-11-11T18:19:06.704863+00:00"
+      "installed_at": "2026-11-21T23:39:59.733952+00:00"
     },
     "speckit-specify": {
       "version": "0.1.0",
@@ -62,7 +62,25 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-11-11T18:19:06.909983+00:00"
+      "installed_at": "2026-11-21T23:40:00.109991+00:00"
+    },
+    "blueprint-index": {
+      "version": "0.3.0",
+      "source": "local",
+      "manifest_hash": "sha256:2baee50f15224dc144ed184bea9e63f61c6ac466953fdfdd64cd4d89517dd394",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "agy": [
+          "speckit.blueprint-index.init",
+          "speckit.blueprint-index.status",
+          "speckit.blueprint-index.distill",
+          "speckit.blueprint-index.remap",
+          "speckit.blueprint-index.recover"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-11-21T23:40:01.305112+00:00"
     }
   }
 }
