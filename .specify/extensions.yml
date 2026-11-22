@@ -1,4 +1,8 @@
-installed: []
+installed:
+- blueprint-index
+- speckit-implement
+- speckit-plan
+- speckit-specify
 settings:
   auto_execute_hooks: true
 hooks:
@@ -22,6 +26,7 @@ hooks:
     command: speckit.speckit-specify.before
     enabled: true
     optional: true
+    priority: 10
     prompt: Run before_specify hook?
     description: Before /speckit.specify hook
     condition: null
@@ -45,6 +50,7 @@ hooks:
     command: speckit.speckit-plan.before
     enabled: true
     optional: true
+    priority: 10
     prompt: Run before_plan hook?
     description: Before /speckit.plan hook
     condition: null
@@ -68,6 +74,7 @@ hooks:
     command: speckit.speckit-implement.before
     enabled: true
     optional: false
+    priority: 10
     prompt: Generate integration tests from the spec before implementation?
     description: Generate integration tests from the feature spec before implementation
     condition: null
@@ -115,6 +122,7 @@ hooks:
     command: speckit.speckit-specify.after
     enabled: true
     optional: true
+    priority: 10
     prompt: Run after_specify hook?
     description: After /speckit.specify hook
     condition: null
@@ -138,6 +146,7 @@ hooks:
     command: speckit.speckit-plan.after
     enabled: true
     optional: true
+    priority: 10
     prompt: Run after_plan hook?
     description: After /speckit.plan hook
     condition: null
@@ -161,6 +170,7 @@ hooks:
     command: speckit.speckit-implement.after
     enabled: true
     optional: true
+    priority: 10
     prompt: Run after_implement hook?
     description: After /speckit.implement hook
     condition: null
