@@ -473,7 +473,73 @@ void main() {
       repo.throwOnGetActive = false;
       await Future.delayed(const Duration(milliseconds: 250));
     });
+
+    test('T013: refreshActiveJob falls back to getBatchJob when getActiveBatchJob returns null for an active job', () async {
+      final repo = _NullActiveFallbackMockRepo();
+      final container = ProviderContainer(
+        overrides: [
+          careTasksRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(regimenBatchProvider.notifier);
+      final enqueued = await notifier.enqueueGeneration(ResidentFixtures.margaretThompson);
+      expect(enqueued, isNotNull);
+      expect(enqueued!.isActive, isTrue);
+
+      repo.returnNullFromGetActive = true;
+      await notifier.refreshActiveJob(ResidentFixtures.margaretThompson.id);
+
+      final updated = container
+          .read(regimenBatchProvider)
+          .jobForResident(ResidentFixtures.margaretThompson.id);
+      expect(repo.getBatchJobCalls, greaterThanOrEqualTo(1));
+      expect(updated, isNotNull);
+      expect(updated!.isCompleted, isTrue);
+      expect(updated.plan, isNotNull);
+      expect(container.read(regimenBatchProvider).lastCompletionEvent?.job.id, enqueued.id);
+      expect(container.read(careTasksProvider).activePreviewPlan?.id, updated.plan!.id);
+    });
   });
+}
+
+class _NullActiveFallbackMockRepo extends MockCareTasksRepository {
+  bool returnNullFromGetActive = false;
+  int getBatchJobCalls = 0;
+
+  @override
+  Future<RegimenBatchJob?> getActiveBatchJob(String residentId) async {
+    if (returnNullFromGetActive) {
+      return null;
+    }
+    return super.getActiveBatchJob(residentId);
+  }
+
+  @override
+  Future<RegimenBatchJob> getBatchJob(String residentId, String jobId) async {
+    getBatchJobCalls++;
+    final now = DateTime.now().toUtc();
+    final plan = await generateWeeklyRegimen(
+      resident: ResidentFixtures.margaretThompson,
+      weekStartDate: now,
+      autoApply: false,
+    );
+    return RegimenBatchJob(
+      id: jobId,
+      residentId: residentId,
+      requestedBy: 'cg_test',
+      jobType: BatchJobType.generation,
+      status: BatchJobStatus.completed,
+      phase: RegimenGenerationPhase.completed,
+      weekStartDate: now,
+      planId: plan.id,
+      plan: plan,
+      createdAt: now.subtract(const Duration(minutes: 4)),
+      completedAt: now,
+      updatedAt: now,
+    );
+  }
 }
 
 class _FlakyPollMockRepo extends MockCareTasksRepository {

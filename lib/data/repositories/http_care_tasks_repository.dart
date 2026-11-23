@@ -582,7 +582,8 @@ class HttpCareTasksRepository implements CareTasksRepository {
     if (res is Map<String, dynamic>) {
       final rawJob = res['job'];
       if (rawJob is Map<String, dynamic>) {
-        return _mapBatchJobResponse(rawJob, fixtureId);
+        final job = _mapBatchJobResponse(rawJob, fixtureId);
+        return _hydrateCompletedPlanIfMissing(job, fixtureId);
       }
       return null;
     }
@@ -594,9 +595,35 @@ class HttpCareTasksRepository implements CareTasksRepository {
     final fixtureId = ResidentFixtures.toFixtureId(residentId);
     final res = await _apiClient.get('/activities/plan/jobs/$jobId');
     if (res is Map<String, dynamic>) {
-      return _mapBatchJobResponse(res, fixtureId);
+      final job = _mapBatchJobResponse(res, fixtureId);
+      return _hydrateCompletedPlanIfMissing(job, fixtureId);
     }
     throw const RegimenGateException(502, 'Unexpected batch job response.');
+  }
+
+  Future<RegimenBatchJob> _hydrateCompletedPlanIfMissing(
+    RegimenBatchJob job,
+    String fixtureId,
+  ) async {
+    if (!job.isCompleted ||
+        job.plan != null ||
+        job.planId == null ||
+        job.planId!.isEmpty) {
+      return job;
+    }
+    try {
+      final planRes = await _apiClient.get('/activities/plan/${job.planId}');
+      if (planRes is Map<String, dynamic>) {
+        return job.copyWith(plan: _mapPlanResponse(planRes, fixtureId));
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[HttpCareTasksRepository] Failed to hydrate completed plan ${job.planId}: $e',
+        );
+      }
+    }
+    return job;
   }
 
   @override
@@ -680,9 +707,17 @@ class HttpCareTasksRepository implements CareTasksRepository {
 
   RegimenPlan _mapPlanResponse(Map<String, dynamic> json, String fixtureId) {
     final rawItems = (json['items'] as List<dynamic>?) ?? const [];
-    final mappedItems = rawItems
-        .map((it) => _mapActivityItemToTask(it as Map<String, dynamic>, fixtureId))
-        .toList();
+    final mappedItems = <CareTask>[];
+    for (final it in rawItems) {
+      if (it is! Map<String, dynamic>) continue;
+      try {
+        mappedItems.add(_mapActivityItemToTask(it, fixtureId));
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[HttpCareTasksRepository] Skipping malformed plan item: $e');
+        }
+      }
+    }
     return RegimenPlan.fromJson(
       json,
       residentId: fixtureId,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../data/repositories/care_tasks_repository.dart';
 import '../../../domain/entities/regimen_plan.dart';
 import '../../family_portal/resident_provider.dart';
 import '../care_tasks_provider.dart';
@@ -15,17 +16,23 @@ class RegimenBatchBanner extends ConsumerWidget {
     WidgetRef ref,
     RegimenBatchJob job,
   ) async {
-    final plan = job.plan;
+    var plan = job.plan;
+    if (plan == null) {
+      await ref
+          .read(regimenBatchProvider.notifier)
+          .refreshActiveJob(job.residentId);
+      plan = ref.read(regimenBatchProvider).jobForResident(job.residentId)?.plan;
+    }
+    if (plan == null) {
+      try {
+        final hydrated = await ref
+            .read(careTasksRepositoryProvider)
+            .getBatchJob(job.residentId, job.id);
+        plan = hydrated.plan;
+      } catch (_) {}
+    }
     if (plan != null) {
       ref.read(careTasksProvider.notifier).setPreviewPlanFromBatch(plan);
-    } else if (job.planId != null) {
-      final fetched = await ref
-          .read(regimenBatchProvider.notifier)
-          .refreshActiveJob(job.residentId)
-          .then((_) => ref.read(regimenBatchProvider).jobForResident(job.residentId)?.plan);
-      if (fetched != null) {
-        ref.read(careTasksProvider.notifier).setPreviewPlanFromBatch(fetched);
-      }
     }
     if (!context.mounted) return;
     await showModalBottomSheet<void>(

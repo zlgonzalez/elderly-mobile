@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/care_task.dart';
 import '../../../domain/entities/montessori_activity.dart';
+import '../../a2ui/step_text_formatter.dart';
 import '../../care_tasks/care_tasks_provider.dart';
 import '../../family_portal/resident_provider.dart';
 
@@ -297,7 +298,7 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
                   children: [
                     ...a.steps.asMap().entries.map((entry) {
                       final idx = entry.key + 1;
-                      final stepText = entry.value;
+                      final parsed = parseFacilitationStep(entry.value);
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Row(
@@ -322,9 +323,29 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: Text(
-                                stepText,
-                                style: const TextStyle(fontSize: 12, height: 1.4, color: AppColors.textPrimary),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (parsed.heading != null) ...[
+                                    Text(
+                                      parsed.heading!,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                  ],
+                                  Text(
+                                    parsed.body,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      height: 1.4,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/repositories/mock_care_tasks_repository.dart';
 import '../../../domain/entities/regimen_plan.dart';
+import '../../a2ui/regimen_a2ui_surface.dart';
 import '../care_tasks_provider.dart';
 import '../regimen_batch_provider.dart';
 
@@ -177,184 +178,122 @@ class _RegimenPreviewSheetState extends ConsumerState<RegimenPreviewSheet> {
       return const SizedBox.shrink();
     }
 
-    final groupedDays = plan.itemsGroupedByDay;
-    final dayKeys = groupedDays.keys.toList()..sort();
     final isBlocked = plan.hasCriticalSafetyBlock;
     final needsAck = plan.requiresLowScoreConfirmation;
     final canApply = !isBlocked && !taskState.isGenerating;
     final effectiveStartDate = _selectedWeekStartDate ?? plan.weekStartDate;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.88,
+      initialChildSize: 0.9,
       maxChildSize: 0.96,
       minChildSize: 0.55,
       expand: false,
       builder: (context, scrollCtrl) {
         return Material(
-          color: AppColors.surface,
+          color: AppColors.background,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 16, 8),
-                child: Row(
+              // Drag handle + Sheet Header
+              Container(
+                color: AppColors.surface,
+                padding: const EdgeInsets.fromLTRB(20, 10, 12, 12),
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '7-Day Montessori Regimen Preview',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 8,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surfaceVariant,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  plan.generationSource.displayName,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                              if (plan.scorecard != null)
-                                Text(
-                                  'Clinical Score: ${plan.scorecard!.compositeScore}/100',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: plan.scorecard!.isLowScore
-                                        ? Colors.orange.shade800
-                                        : AppColors.primary,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.border,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () {
-                        ref.read(careTasksProvider.notifier).clearPreview();
-                        Navigator.of(context).pop(false);
-                      },
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '7-Day Montessori Regimen Preview',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surfaceVariant,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      plan.generationSource.displayName,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  if (plan.scorecard != null)
+                                    Text(
+                                      'Clinical Score: ${plan.scorecard!.compositeScore}/100',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: plan.scorecard!.isLowScore
+                                            ? Colors.orange.shade800
+                                            : AppColors.primary,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Close preview',
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            ref.read(careTasksProvider.notifier).clearPreview();
+                            Navigator.of(context).pop(false);
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1),
+              const Divider(height: 1, color: AppColors.borderLight),
               Expanded(
                 child: ListView(
                   controller: scrollCtrl,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
                   children: [
-                    if (plan.safetyFlags.isNotEmpty || isBlocked) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: isBlocked
-                              ? Colors.red.shade50
-                              : Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isBlocked
-                                ? Colors.red.shade300
-                                : Colors.amber.shade300,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isBlocked
-                                  ? 'Clinical Safety Hold: Escalation Required'
-                                  : 'Safety & Comfort Guidelines',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: isBlocked
-                                    ? Colors.red.shade900
-                                    : Colors.amber.shade900,
-                              ),
-                            ),
-                            ...plan.safetyFlags.map(
-                              (f) => Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  '• $f',
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                    // Start Date Selector Card
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
                       ),
-                    ],
-                    if (plan.scorecard != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: [
-                                _scorePill(
-                                  'Cognitive: ${plan.scorecard!.cognitiveAlignmentScore}',
-                                ),
-                                _scorePill(
-                                  'Physical: ${plan.scorecard!.physicalAccessibilityScore}',
-                                ),
-                                _scorePill(
-                                  'Engagement: ${plan.scorecard!.purposefulEngagementScore}',
-                                ),
-                                _scorePill(
-                                  'Safety: ${plan.scorecard!.safetyControlOfErrorScore}',
-                                ),
-                                _scorePill(
-                                  'Balance: ${plan.scorecard!.modalityBalanceScore}',
-                                ),
-                              ],
-                            ),
-                            if (plan.scorecard!.feedback.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                plan.scorecard!.feedback,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.borderLight),
                       ),
-                    ],
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
                       child: Row(
                         children: [
                           const Icon(
@@ -369,6 +308,7 @@ class _RegimenPreviewSheetState extends ConsumerState<RegimenPreviewSheet> {
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ),
@@ -382,25 +322,39 @@ class _RegimenPreviewSheetState extends ConsumerState<RegimenPreviewSheet> {
                       ),
                     ),
                     if (needsAck) ...[
-                      CheckboxListTile(
-                        value: _acknowledgeLowScore,
-                        onChanged: (v) =>
-                            setState(() => _acknowledgeLowScore = v ?? false),
-                        title: const Text(
-                          'Clinical score is below 70. Acknowledge and apply with heightened supervision.',
-                          style: TextStyle(fontSize: 12),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Material(
+                          color: const Color(0xFFFFF8E6),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            side: const BorderSide(color: Color(0xFFF3CF7A)),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: CheckboxListTile(
+                            value: _acknowledgeLowScore,
+                            onChanged: (v) => setState(
+                                () => _acknowledgeLowScore = v ?? false),
+                            title: const Text(
+                              'Clinical score is below 70. Acknowledge and apply with heightened supervision.',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 2,
+                            ),
+                          ),
                         ),
-                        contentPadding: EdgeInsets.zero,
                       ),
                     ],
                     if (_showRefineBox) ...[
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.borderLight),
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.border),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,7 +363,7 @@ class _RegimenPreviewSheetState extends ConsumerState<RegimenPreviewSheet> {
                               'Refine with Kubo',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                                fontSize: 13.5,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -421,7 +375,7 @@ class _RegimenPreviewSheetState extends ConsumerState<RegimenPreviewSheet> {
                                     'e.g. Replace fine-motor tasks due to hand tremors',
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
@@ -447,181 +401,53 @@ class _RegimenPreviewSheetState extends ConsumerState<RegimenPreviewSheet> {
                         ),
                       ),
                     ],
-                    ...dayKeys.map((dayNum) {
-                      final dayTasks = groupedDays[dayNum] ?? const [];
-                      return Card(
-                        elevation: 0,
-                        margin: const EdgeInsets.only(bottom: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          side: const BorderSide(color: AppColors.borderLight),
-                        ),
-                        child: ExpansionTile(
-                          initiallyExpanded: dayNum == dayKeys.first,
-                          title: Text(
-                            'Day $dayNum (${dayTasks.length} activities)',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          children: dayTasks.map((t) {
-                            return ListTile(
-                              title: Text(
-                                '${t.time} • ${t.title}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    t.montessoriDomain ??
-                                        t.category.displayName,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                  if (t.materialsTraySetup != null &&
-                                      t.materialsTraySetup!.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        'Tray setup: ${t.materialsTraySetup}',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ),
-                                  if (t.materials.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        'Tray materials: ${t.materials.join(', ')}',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ),
-                                  if (t.steps.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'Steps:',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          ...t.steps.asMap().entries.map(
-                                                (e) => Text(
-                                                  '${e.key + 1}. ${e.value}',
-                                                  style: const TextStyle(
-                                                      fontSize: 11),
-                                                ),
-                                              ),
-                                        ],
-                                      ),
-                                    ),
-                                  if (t.scriptPrompt != null &&
-                                      t.scriptPrompt!.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 3),
-                                      child: Text(
-                                        'Prompt: "${t.scriptPrompt}"',
-                                        style: const TextStyle(fontSize: 11),
-                                      ),
-                                    ),
-                                  if (t.dignityTip != null &&
-                                      t.dignityTip!.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 3),
-                                      child: Text(
-                                        'Dignity tip: ${t.dignityTip}',
-                                        style: const TextStyle(fontSize: 11),
-                                      ),
-                                    ),
-                                  if (t.safetyComfort != null &&
-                                      t.safetyComfort!.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 3),
-                                      child: Text(
-                                        'Safety & comfort: ${t.safetyComfort}',
-                                        style: const TextStyle(fontSize: 11),
-                                      ),
-                                    ),
-                                  if (t.historicalConnection != null &&
-                                      t.historicalConnection!.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 2),
-                                      child: Text(
-                                        'Memory link: ${t.historicalConnection}',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      );
-                    }),
+                    // Official Dart A2UI Surface rendering Scorecard + 7-Day Schedule + Activity Cards
+                    RegimenA2uiSurface.forPlan(plan: plan),
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
-                child: Row(
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: taskState.isGenerating
-                          ? null
-                          : () => setState(() => _showRefineBox = true),
-                      icon: const Icon(Icons.auto_fix_high, size: 18),
-                      label: const Text('Refine with Kubo'),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: canApply ? () => _applyPlan(plan) : null,
-                        icon: const Icon(Icons.check_circle_outline, size: 18),
-                        label: const Text('Apply 7-Day Plan'),
+              Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border(
+                    top: BorderSide(color: AppColors.borderLight),
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                child: SafeArea(
+                  top: false,
+                  child: Row(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: taskState.isGenerating
+                            ? null
+                            : () => setState(() => _showRefineBox = true),
+                        icon: const Icon(Icons.auto_fix_high, size: 18),
+                        label: const Text('Refine with Kubo'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 48),
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: canApply ? () => _applyPlan(plan) : null,
+                          icon:
+                              const Icon(Icons.check_circle_outline, size: 18),
+                          label: const Text('Apply 7-Day Plan'),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         );
       },
-    );
-  }
-
-  Widget _scorePill(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        ),
-      ),
     );
   }
 }

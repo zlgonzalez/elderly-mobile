@@ -1,0 +1,130 @@
+openapi: 3.0.3
+info:
+  title: Kubo Batch Regimen Generation & Completion Sync Contract
+  version: 1.1.0
+  description: >-
+    Contracts across elderly-mobile, elderly-microservices, and kubo-agents for
+    reliable long-running (3-5 minute) asynchronous 7-day Montessori regimen
+    generation, by-ID polling fallback, and adaptive clinical scorecard timing.
+paths:
+  /api/v1/activities/plan/jobs:
+    post:
+      summary: Enqueue an asynchronous 7-day Montessori regimen generation batch job
+      operationId: enqueueGenerationJob
+      responses:
+        '202':
+          description: Batch job accepted and queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegimenBatchJob'
+        '409':
+          description: An active batch job already exists for this patient
+  /api/v1/activities/plan/jobs/active:
+    get:
+      summary: Get active or most recent undismissed terminal batch job for a patient
+      operationId: getActiveBatchJob
+      parameters:
+        - name: patient_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Active or recent undismissed terminal batch job (with hydrated plan when completed)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job:
+                    $ref: '#/components/schemas/RegimenBatchJob'
+                    nullable: true
+  /api/v1/activities/plan/jobs/{jobId}:
+    get:
+      summary: Get a specific batch job by ID (used as direct fallback when active lookup is empty)
+      operationId: getBatchJobById
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Batch job record with hydrated ActivityPlan when completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegimenBatchJob'
+        '404':
+          description: Batch job not found
+  /regimen/generate:
+    post:
+      summary: kubo-agents internal regimen synthesis endpoint with phase timing & adaptive scorecard budget guard
+      operationId: kuboAgentsGenerateRegimen
+      responses:
+        '200':
+          description: Generated 7-day Montessori regimen with clinical scorecard
+components:
+  schemas:
+    RegimenBatchJob:
+      type: object
+      required:
+        - id
+        - patient_id
+        - job_type
+        - status
+        - phase
+        - retry_count
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        patient_id:
+          type: string
+          format: uuid
+        job_type:
+          type: string
+          enum: [generation, refinement]
+        status:
+          type: string
+          enum: [queued, in_progress, completed, failed, canceled]
+        phase:
+          type: string
+          enum: [retrieval, synthesis, refinement, scoring, completed, failed, canceled]
+        plan_id:
+          type: string
+          format: uuid
+          nullable: true
+        plan:
+          type: object
+          nullable: true
+          description: Hydrated 7-day ActivityPlan included whenever status is completed
+        retry_count:
+          type: integer
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        dismissed_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
