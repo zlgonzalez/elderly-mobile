@@ -165,6 +165,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             )
                           : const Text('Sign In'),
                     ),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      key: const Key('login_signup_button'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      onPressed: authState.isLoading
+                          ? null
+                          : () => context.push('/signup'),
+                      child: const Text('Sign Up as Caregiver'),
+                    ),
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => context.pop(),

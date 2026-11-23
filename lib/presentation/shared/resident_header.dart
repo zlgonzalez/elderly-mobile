@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../auth/auth_provider.dart';
 import '../family_portal/resident_provider.dart';
 import 'resident_switch_modal.dart';
 import 'server_settings_modal.dart';
@@ -74,33 +75,83 @@ class ResidentHeader extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              runSpacing: 4,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Kubo North',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      Text(
+                        'Kubo North',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Home Circle · Family Care',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Home Circle · Family Care',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      key: const Key('header_settings_button'),
+                      onPressed: () => ServerSettingsModal.show(context),
+                      icon: const Icon(Icons.settings_outlined,
+                          size: 20, color: AppColors.primary),
+                      tooltip: 'Server Settings',
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.surfaceVariant,
+                        minimumSize: const Size(36, 36),
+                        padding: const EdgeInsets.all(6),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      key: const Key('header_logout_button'),
+                      onPressed: () async {
+                        await ref.read(authProvider.notifier).logout();
+                        if (context.mounted) {
+                          context.go('/login');
+                        }
+                      },
+                      icon: const Icon(Icons.logout,
+                          size: 20, color: AppColors.primary),
+                      tooltip: 'Sign Out',
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.surfaceVariant,
+                        minimumSize: const Size(36, 36),
+                        padding: const EdgeInsets.all(6),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -156,46 +207,26 @@ class ResidentHeader extends ConsumerWidget {
                     ],
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => ResidentSwitchModal.show(context),
-                      icon: const Icon(Icons.swap_horiz,
-                          size: 18, color: AppColors.primary),
-                      label: const Text(
-                        'Switch',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        backgroundColor: AppColors.surfaceVariant,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        minimumSize: const Size(48, 40),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
+                TextButton.icon(
+                  onPressed: () => ResidentSwitchModal.show(context),
+                  icon: const Icon(Icons.swap_horiz,
+                      size: 18, color: AppColors.primary),
+                  label: const Text(
+                    'Switch',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(width: 6),
-                    IconButton(
-                      key: const Key('header_settings_button'),
-                      onPressed: () => ServerSettingsModal.show(context),
-                      icon: const Icon(Icons.settings_outlined,
-                          size: 20, color: AppColors.primary),
-                      tooltip: 'Server Settings',
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppColors.surfaceVariant,
-                        minimumSize: const Size(40, 40),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
+                  ),
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.surfaceVariant,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    minimumSize: const Size(48, 40),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),

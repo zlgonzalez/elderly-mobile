@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../presentation/auth/demo_login_screen.dart';
 import '../../presentation/auth/login_screen.dart';
+import '../../presentation/auth/caregiver_signup_screen.dart';
+import '../../presentation/auth/caregiver_finalize_signup_screen.dart';
 import '../../presentation/auth/auth_provider.dart';
 import '../../presentation/shared/responsive_layout.dart';
 import '../../presentation/family_portal/family_portal_screen.dart';
@@ -28,6 +30,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => const CaregiverSignUpScreen(),
+      ),
+      GoRoute(
+        path: '/signup/finalize',
+        builder: (context, state) => CaregiverFinalizeSignUpScreen(
+          initialEmail: state.uri.queryParameters['email'],
+        ),
       ),
       GoRoute(
         path: '/story',
@@ -111,7 +123,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final authState = ref.read(authProvider);
       final isLoggedIn = authState.user != null;
-      final isAuthPath = state.matchedLocation == '/' || state.matchedLocation == '/login';
+      final isAuthPath = state.matchedLocation == '/' ||
+          state.matchedLocation == '/login' ||
+          state.matchedLocation == '/signup' ||
+          state.matchedLocation == '/signup/finalize';
 
       if (!isLoggedIn && !isAuthPath) {
         return '/';

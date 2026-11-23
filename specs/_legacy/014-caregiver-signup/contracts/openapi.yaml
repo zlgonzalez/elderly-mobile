@@ -1,0 +1,311 @@
+openapi: 3.0.3
+info:
+  title: Kubo North Caregiver Onboarding & Auth API
+  version: 1.0.0
+  description: >
+    Modular monolith HTTP contracts under /api/v1/auth for caregiver email sign-up initiation,
+    6-digit verification code resend, account finalization (username + password + automatic
+    AuthN/AuthZ provisioning), and username/email credential login.
+paths:
+  /api/v1/auth/onboarding/initiate:
+    post:
+      summary: Initiate caregiver email sign-up and send 6-digit verification email
+      operationId: initiateCaregiverOnboarding
+      tags:
+        - Auth & Onboarding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitiateOnboardingRequest'
+      responses:
+        '200':
+          description: Verification email with 6-digit code and finalization link dispatched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitiateOnboardingResponse'
+        '400':
+          description: Invalid or malformed email address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: An active finalized account with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/signup/caregiver:
+    post:
+      summary: Alias for initiateCaregiverOnboarding (/api/v1/auth/onboarding/initiate)
+      operationId: initiateCaregiverSignupAlias
+      tags:
+        - Auth & Onboarding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitiateOnboardingRequest'
+      responses:
+        '200':
+          description: Verification email with 6-digit code and finalization link dispatched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitiateOnboardingResponse'
+        '400':
+          description: Invalid or malformed email address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: An active finalized account with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/onboarding/resend:
+    post:
+      summary: Resend a fresh 6-digit verification code and finalization link
+      operationId: resendCaregiverOnboardingCode
+      tags:
+        - Auth & Onboarding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendOnboardingRequest'
+      responses:
+        '200':
+          description: Prior code invalidated and fresh 6-digit verification email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitiateOnboardingResponse'
+        '400':
+          description: Invalid email address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Account is already finalized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/onboarding/finalize:
+    post:
+      summary: Verify 6-digit code, establish caregiver username and password, and auto-authenticate
+      operationId: finalizeCaregiverOnboarding
+      tags:
+        - Auth & Onboarding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinalizeOnboardingRequest'
+      responses:
+        '200':
+          description: Caregiver account provisioned, affiliated with standalone care context, and signed JWT returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error (missing fields, weak password, invalid username)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid, expired, or locked 6-digit verification code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Chosen username or email is already taken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/login:
+    post:
+      summary: Authenticate user by username or email and password
+      operationId: loginUser
+      tags:
+        - Auth & Onboarding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    InitiateOnboardingRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: "jane.caregiver@example.com"
+        role:
+          type: string
+          enum: [caregiver]
+          default: caregiver
+
+    ResendOnboardingRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: "jane.caregiver@example.com"
+
+    InitiateOnboardingResponse:
+      type: object
+      required:
+        - message
+        - email
+        - finalization_link
+        - expires_in_seconds
+      properties:
+        message:
+          type: string
+          example: "Verification email sent with 6-digit code"
+        email:
+          type: string
+          format: email
+          example: "jane.caregiver@example.com"
+        finalization_link:
+          type: string
+          example: "/signup/finalize?email=jane.caregiver%40example.com"
+        expires_in_seconds:
+          type: integer
+          example: 900
+
+    FinalizeOnboardingRequest:
+      type: object
+      required:
+        - email
+        - code
+        - username
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "jane.caregiver@example.com"
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+          example: "482910"
+        username:
+          type: string
+          minLength: 3
+          maxLength: 64
+          example: "jane.caregiver"
+        password:
+          type: string
+          minLength: 8
+          example: "SecurePass123!"
+
+    LoginRequest:
+      type: object
+      required:
+        - password
+      properties:
+        email:
+          type: string
+          description: Email address or username identifier
+          example: "jane.caregiver"
+        username:
+          type: string
+          description: Optional explicit username field (either email or username may be supplied)
+          example: "jane.caregiver"
+        password:
+          type: string
+          example: "SecurePass123!"
+
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - username
+        - name
+        - role
+        - is_email_verified
+        - is_sms_verified
+        - needs_onboarding
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [caregiver, family, admin]
+        is_email_verified:
+          type: boolean
+        is_sms_verified:
+          type: boolean
+        needs_onboarding:
+          type: boolean
+
+    AuthResponse:
+      type: object
+      required:
+        - token
+        - user
+      properties:
+        token:
+          type: string
+          description: Signed JWT bearer token containing sub, email, username, name, role, and verification claims
+        user:
+          $ref: '#/components/schemas/User'
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
