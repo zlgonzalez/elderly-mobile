@@ -43,6 +43,9 @@ dependencies:
   riverpod_annotation: ^2.3.5
   google_fonts: ^8.0.2
   crypto: ^3.0.3
+  a2ui_flutter: ^0.4.0
+  a2ui_core: ^0.8.0
+  json_schema_builder: ^0.1.7
 
 dev_dependencies:
   flutter_test:

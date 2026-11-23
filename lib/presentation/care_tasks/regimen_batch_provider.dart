@@ -104,7 +104,19 @@ class RegimenBatchNotifier extends StateNotifier<RegimenBatchState> {
     final key = ResidentFixtures.toFixtureId(residentId);
     final previous = state.jobsByResident[key];
     try {
-      final fetched = await _repository.getActiveBatchJob(key);
+      var fetched = await _repository.getActiveBatchJob(key);
+      if (previous != null &&
+          previous.isActive &&
+          (fetched == null ||
+              (fetched.isCompleted &&
+                  fetched.plan == null &&
+                  fetched.planId != null))) {
+        try {
+          fetched = await _repository.getBatchJob(key, previous.id);
+        } catch (_) {
+          // Preserve fetched (or null) if direct job lookup fails transiently.
+        }
+      }
       if (!mounted) return;
       _applyJobUpdate(key, previous, fetched);
     } catch (_) {
@@ -131,8 +143,14 @@ class RegimenBatchNotifier extends StateNotifier<RegimenBatchState> {
         residentId: key,
         job: next,
       );
-      if (next.isCompleted && next.plan?.planStatus == 'applied') {
-        _ref.read(careTasksProvider.notifier).loadTasks();
+      if (next.isCompleted && next.plan != null) {
+        if (next.plan!.planStatus == 'applied') {
+          _ref.read(careTasksProvider.notifier).loadTasks();
+        } else {
+          _ref
+              .read(careTasksProvider.notifier)
+              .setPreviewPlanFromBatch(next.plan!);
+        }
       }
     }
 

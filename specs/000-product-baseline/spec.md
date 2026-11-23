@@ -127,3 +127,17 @@
 
 - **Given** a telemetry event payload contains `patient_name: "Margaret"`, `clinical_notes: "Elevated BP"`, and `caregiver_id: "cg_123"`, **When** sanitized prior to buffering, **Then** `patient_name` and `clinical_notes` are replaced with `[REDACTED]` and `caregiver_id` is replaced with its deterministic HMAC-SHA256 hex digest.
 - **Given** the local telemetry buffer reaches its `5 MB` limit, **When** a new crash event arrives, **Then** lower-priority buffered events are evicted to preserve the memory cap without crashing the app.
+
+---
+
+## 8. Domain 7: Reliable Batch Regimen Delivery & A2UI Review Surfaces
+
+### Requirements
+
+- **FR-031 (Direct-by-Job-ID Fallback Polling & Non-Blocking Completion Delivery):** While a batch regimen job is active, caregivers MUST be able to navigate freely across all tabs and switch residents without blocking modals. If `getActiveBatchJob` returns `null` or omits the hydrated `plan` for a known in-flight `job_id`, the app MUST fall back to `getBatchJob(residentId, jobId)` (and hydrate missing plans via `GET /activities/plan/{planId}`) so terminal completion or failure transitions are delivered reliably within one polling interval.
+- **FR-032 (A2UI v1.0 Regimen Review Panels & Step Normalization):** Both the post-generation 7-day regimen preview sheet (`RegimenPreviewSheet`) and the post-apply care task detail sheet (`CareTasksScreen`) MUST render through the official Dart A2UI v1.0 renderer (`a2ui_flutter` + `a2ui_core`) using the Kubo Regimen A2UI catalog (`RegimenClinicalScorecard`, `RegimenDaySchedule`, `RegimenActivityCard`). Facilitation steps MUST strip redundant leading numbering prefixes (preventing `"1. 1. ..."` duplication) and display numbered step badges, checkable tray materials, and clinical guidance callouts.
+
+### Acceptance Scenarios
+
+- **Given** an in-flight batch regimen job where `getActiveBatchJob` returns `null` right as the backend finishes, **When** the next poll ticks, **Then** the app falls back to `getBatchJob(residentId, jobId)`, emits the completion event, and stages the hydrated preview plan without losing the result.
+- **Given** a generated or applied activity whose facilitation steps contain `"1. Prepare Tray & Seating: ..."`, **When** opened in either the regimen preview or task detail sheet, **Then** the A2UI surface renders a single numbered badge (`1`) with bold heading `Prepare Tray & Seating` and never displays `"1. 1."`.

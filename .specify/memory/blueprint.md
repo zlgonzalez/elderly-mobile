@@ -31,6 +31,7 @@
 - `test` — Automated verification suite covering unit logic, widget screens/modals, end-to-end regimen specs, and Android/iOS platform harnesses; **code-owned**
 - `web` — Web host shell providing the HTML entry page, PWA manifest, and web icons for Flutter web builds; **code-owned**
 - `windows` — Windows desktop host shell built with CMake and Win32 to host the Flutter engine; **code-owned**
+- `Regimen Timeout Sync & Delivery` — Delivers non-blocking background batch regimen completion with direct-by-job-ID fallback polling and renders both preview and applied activity reviews via the official Dart A2UI v1.0 renderer; **distilled** → `specs/013-fix-regimen-timeout-sync`
 
 ---
 
@@ -101,7 +102,7 @@ Do not restate those details here — this section indexes the spec.
 <!-- blueprint:section state=distilled owner=specs/000-product-baseline -->
 > **Distilled — owned by `specs/000-product-baseline`** (implemented at `lib/data/`).
 > The full behavioral requirements live in that spec, which is the source of truth.
-<!-- blueprint:code path=lib/data sha=925d42451e2f101eaff6c49fafb6b6fe51145d69 -->
+<!-- blueprint:code path=lib/data sha=99784d4ef8964903a8f00484439023be2a352ac8 -->
 
 Data access layer providing abstract repository contracts, paired Mock and HTTP implementations, demo seed fixtures, and local demo-reset orchestration. At a glance:
 
@@ -135,7 +136,7 @@ Do not restate those details here — this section indexes the spec.
 <!-- blueprint:section state=distilled owner=specs/000-product-baseline -->
 > **Distilled — owned by `specs/000-product-baseline`** (implemented at `lib/presentation/`).
 > The full behavioral requirements live in that spec, which is the source of truth.
-<!-- blueprint:code path=lib/presentation sha=7b4a6ec6d2b17109f2a7f17db7f5e3828a6f1171 -->
+<!-- blueprint:code path=lib/presentation sha=dedf285d02e9970255b13827c4a3d3a78c88d926 -->
 
 Riverpod state notifiers and responsive Flutter UI screens across all user workflows: authentication, Family Portal, Their Story, Memory Box, Mood Journal, Care Tasks & AI Regimen planning, Health & Vitals, Meal Tracking, Activity Guide, AI Assistant drawer, and Server Settings. At a glance:
 
@@ -184,7 +185,7 @@ For exact behavior, read the code under `linux/`. Do not restate it here.
 > **Distilled — owned by code at `macos/`.** (no spec yet) The implementation
 > is the source of truth; this section maps it. To change it, `/speckit.specify`
 > the area as usual and `distill` it when the spec ships.
-<!-- blueprint:code path=macos sha=02ae37936287d41895ede4f456b1d14d87e9416a -->
+<!-- blueprint:code path=macos sha=10070f5b7c7fb664425905b2ba1efb167f12ce08 -->
 
 macOS desktop host shell that configures the Cocoa window, entitlements, and Flutter view controller. At a glance:
 
@@ -199,7 +200,7 @@ For exact behavior, read the code under `macos/`. Do not restate it here.
 > **Distilled — owned by code at `test/`.** (no spec yet) The implementation
 > is the source of truth; this section maps it. To change it, `/speckit.specify`
 > the area as usual and `distill` it when the spec ships.
-<!-- blueprint:code path=test sha=f543fd610bb634446f25f4d7750be8d0d29b0d1b -->
+<!-- blueprint:code path=test sha=cf8860e42371926b717c99a49074197b0dba6183 -->
 
 Automated verification suite covering unit logic, widget screens/modals, end-to-end regimen specs, and Android/iOS platform harnesses. At a glance:
 
@@ -238,6 +239,21 @@ Windows desktop host shell built with CMake and Win32 to host the Flutter engine
 - **Window host** — flutter_window.cpp embeds FlutterViewController and registers plugins.
 
 For exact behavior, read the code under `windows/`. Do not restate it here.
+---
+
+## Regimen Timeout Sync & Delivery
+<!-- blueprint:section state=distilled owner=specs/013-fix-regimen-timeout-sync -->
+> **Distilled — owned by `specs/013-fix-regimen-timeout-sync`.** (implemented at `lib/presentation/a2ui/`, `lib/presentation/care_tasks/`, and `lib/data/repositories/`) The full detail lives in that feature spec, which is the source of truth. This section is a summary + index.
+<!-- blueprint:code path=lib/presentation/a2ui sha=15f5bb7c6c984048b23a8d7ac3f3c6714ebe0455 -->
+
+Delivers non-blocking background batch regimen completion with direct-by-job-ID fallback polling and renders both preview and applied activity reviews via the official Dart A2UI v1.0 renderer. At a glance:
+
+- **Direct-by-ID fallback** — Falls back to getBatchJob(residentId, jobId) and plan hydration whenever getActiveBatchJob returns null or lacks the completed plan.
+- **Non-blocking navigation** — Keeps all care tabs and resident switching interactive while background polling tracks active jobs and surfaces completion banners.
+- **A2UI v1.0 review panels** — Renders RegimenPreviewSheet and applied CareTasksScreen detail sheets with a2ui_flutter and custom Kubo Regimen catalog components, stripping duplicate step prefixes.
+
+For every requirement, threshold, and entity shape, see `specs/013-fix-regimen-timeout-sync/spec.md`.
+Do not restate those details here — this section indexes the spec.
 ---
 
 ## Architecture — subsystem relations

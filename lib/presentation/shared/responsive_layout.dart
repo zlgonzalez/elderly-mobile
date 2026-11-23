@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
+import '../../data/repositories/care_tasks_repository.dart';
 import '../../domain/entities/regimen_plan.dart';
 import '../../main.dart';
 import '../care_tasks/care_tasks_provider.dart';
@@ -64,6 +65,14 @@ class _ResponsiveLayoutState extends ConsumerState<ResponsiveLayout>
           .read(regimenBatchProvider)
           .jobForResident(event.residentId)
           ?.plan;
+      if (plan == null) {
+        try {
+          final hydrated = await ref
+              .read(careTasksRepositoryProvider)
+              .getBatchJob(event.residentId, event.job.id);
+          plan = hydrated.plan;
+        } catch (_) {}
+      }
     }
     if (plan == null) return;
     ref.read(careTasksProvider.notifier).setPreviewPlanFromBatch(plan);

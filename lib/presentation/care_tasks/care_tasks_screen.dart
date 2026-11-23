@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../domain/entities/care_task.dart';
 import '../../domain/entities/regimen_plan.dart';
 import '../auth/auth_provider.dart';
+import '../a2ui/regimen_a2ui_surface.dart';
 import '../family_portal/resident_provider.dart';
 import '../shared/resident_header.dart';
 import '../shared/ask_kubo_floating_button.dart';
@@ -58,106 +59,90 @@ class CareTasksScreen extends ConsumerWidget {
     );
   }
 
-  void _openTaskDetailSheet(BuildContext context, CareTask task) {
-    showModalBottomSheet(
+  void _openTaskDetailSheet(BuildContext context, WidgetRef ref, CareTask task) {
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.title,
-                  style: Theme.of(ctx)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  task.description,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                if (task.materialsTraySetup != null &&
-                    task.materialsTraySetup!.isNotEmpty) ...[
-                  const SizedBox(height: 14),
-                  const Text('Tray Setup',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(task.materialsTraySetup!,
-                      style: const TextStyle(fontSize: 13)),
-                ],
-                if (task.materials.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  const Text('Materials',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: task.materials
-                        .map((m) => Chip(
-                              label:
-                                  Text(m, style: const TextStyle(fontSize: 12)),
-                            ))
-                        .toList(),
-                  ),
-                ],
-                if (task.steps.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  const Text('Facilitation Steps',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  ...task.steps.asMap().entries.map(
-                        (e) => Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Text(
-                            '${e.key + 1}. ${e.value}',
-                            style: const TextStyle(fontSize: 13),
+        return DraggableScrollableSheet(
+          initialChildSize: 0.82,
+          maxChildSize: 0.95,
+          minChildSize: 0.48,
+          expand: false,
+          builder: (sheetCtx, scrollCtrl) {
+            return Material(
+              color: AppColors.background,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Container(
+                    color: AppColors.surface,
+                    padding: const EdgeInsets.fromLTRB(20, 10, 12, 10),
+                    child: Column(
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.only(bottom: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.border,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
                         ),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.spa_outlined,
+                              size: 20,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Activity Facilitation Guide',
+                                style: Theme.of(sheetCtx)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Close guide',
+                              icon: const Icon(Icons.close),
+                              onPressed: () => Navigator.of(sheetCtx).pop(),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1, color: AppColors.borderLight),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scrollCtrl,
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                      child: RegimenA2uiSurface.forTask(
+                        task: task,
+                        onAction: (action) {
+                          Navigator.of(sheetCtx).pop();
+                          if (action.name == 'mark_completed') {
+                            _handleCompleteTask(context, ref, task);
+                          } else if (action.name == 'skip_activity') {
+                            _handleSkipTask(context, ref, task);
+                          }
+                        },
                       ),
-                ],
-                if (task.scriptPrompt != null &&
-                    task.scriptPrompt!.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    'Invitation Script: ${task.scriptPrompt}',
-                    style: const TextStyle(
-                        fontSize: 12, fontStyle: FontStyle.italic),
+                    ),
                   ),
                 ],
-                if (task.historicalConnection != null &&
-                    task.historicalConnection!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Historical Connection: ${task.historicalConnection}',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.primary),
-                  ),
-                ],
-                if (task.dignityTip != null && task.dignityTip!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Dignity & Safety Tip: ${task.dignityTip}',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ],
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -415,7 +400,7 @@ class CareTasksScreen extends ConsumerWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: hasRichMontessori
-            ? () => _openTaskDetailSheet(context, task)
+            ? () => _openTaskDetailSheet(context, ref, task)
             : null,
         child: Padding(
           padding: const EdgeInsets.all(12),
