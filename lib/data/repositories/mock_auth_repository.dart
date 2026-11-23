@@ -3,6 +3,9 @@ import 'auth_repository.dart';
 
 class MockAuthRepository implements AuthRepository {
   UserProfile? _currentUser;
+  final Map<String, String> _pendingCodes = {};
+  final Map<String, ({UserProfile profile, String password, String email})>
+      _registeredCaregivers = {};
 
   static const UserProfile sarahThompson = UserProfile(
     id: 'user_sarah',
@@ -53,10 +56,21 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   // [MICROSERVICE_INTEGRATION_POINT]: AuthService - POST /api/v1/auth/login
-  // TODO(microservice): Replace mock data with: final res = await apiClient.post('/api/v1/auth/login', body: {'username': username, 'password': password});
   Future<UserProfile?> loginWithCredentials(String username, String password) async {
-    await Future.delayed(const Duration(milliseconds: 150));
+    await Future.delayed(const Duration(milliseconds: 50));
     final clean = username.toLowerCase().trim();
+
+    for (final entry in _registeredCaregivers.values) {
+      if (entry.profile.username.toLowerCase() == clean ||
+          entry.email.toLowerCase() == clean) {
+        if (entry.password != password) {
+          return null;
+        }
+        _currentUser = entry.profile;
+        return _currentUser;
+      }
+    }
+
     final match = demoProfiles.firstWhere(
       (p) =>
           p.username.toLowerCase() == clean ||
@@ -74,6 +88,71 @@ class MockAuthRepository implements AuthRepository {
     );
     _currentUser = match;
     return _currentUser;
+  }
+
+  @override
+  Future<CaregiverSignUpInitiationResult> initiateCaregiverSignUp(String email) async {
+    await Future.delayed(const Duration(milliseconds: 50));
+    final normalized = email.trim().toLowerCase();
+    if (!normalized.contains('@') || !normalized.split('@').last.contains('.')) {
+      throw Exception('Please enter a valid email address');
+    }
+    if (_registeredCaregivers.containsKey(normalized)) {
+      throw Exception('An account with this email already exists');
+    }
+    _pendingCodes[normalized] = '123456';
+    final encoded = Uri.encodeQueryComponent(normalized);
+    return CaregiverSignUpInitiationResult(
+      email: normalized,
+      finalizationLink: '/signup/finalize?email=$encoded',
+      expiresInSeconds: 900,
+      message: 'Verification email sent with 6-digit code',
+    );
+  }
+
+  @override
+  Future<CaregiverSignUpInitiationResult> resendCaregiverSignUpCode(String email) async {
+    return initiateCaregiverSignUp(email);
+  }
+
+  @override
+  Future<UserProfile> finalizeCaregiverSignUp({
+    required String email,
+    required String code,
+    required String username,
+    required String password,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 50));
+    final normalized = email.trim().toLowerCase();
+    final trimmedUsername = username.trim();
+    final expectedCode = _pendingCodes[normalized];
+    if (expectedCode == null || code.trim() != expectedCode) {
+      throw Exception('Invalid, expired, or locked verification code');
+    }
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 64) {
+      throw Exception('Username must be 3 to 64 characters');
+    }
+    if (password.length < 8) {
+      throw Exception('Password must be at least 8 characters');
+    }
+
+    final profile = UserProfile(
+      id: 'user_cg_${DateTime.now().millisecondsSinceEpoch}',
+      username: trimmedUsername,
+      fullName: trimmedUsername,
+      role: UserRole.visitingCaregiver,
+      relation: 'Caregiver',
+      phone: '555-0100',
+      linkedResidentId: 'res_margaret',
+    );
+    _pendingCodes.remove(normalized);
+    _registeredCaregivers[normalized] = (
+      profile: profile,
+      password: password,
+      email: normalized,
+    );
+    _currentUser = profile;
+    return profile;
   }
 
   @override

@@ -59,16 +59,13 @@ class HttpAuthRepository implements AuthRepository {
   @override
   Future<UserProfile?> loginWithCredentials(String username, String password) async {
     final cleanUsername = username.trim();
-    String email = cleanUsername;
-    if (!email.contains('@')) {
-      email = '$cleanUsername@kubocare.com';
-    }
 
     try {
       final res = await _apiClient.post(
         '/auth/login',
         body: {
-          'email': email,
+          'username': cleanUsername,
+          'email': cleanUsername,
           'password': password,
         },
       );
@@ -88,7 +85,7 @@ class HttpAuthRepository implements AuthRepository {
         String linkedResidentId = '3b471508-d528-4cfb-a9e0-4ac4b06eeec9';
         final accounts = _cachedDemoAccounts ?? await getDemoAccounts();
         for (final acc in accounts) {
-          if (acc.email.toLowerCase() == email.toLowerCase() ||
+          if (acc.email.toLowerCase() == cleanUsername.toLowerCase() ||
               acc.username.toLowerCase() == cleanUsername.toLowerCase()) {
             linkedResidentId = acc.linkedResidentId;
             break;
@@ -97,7 +94,9 @@ class HttpAuthRepository implements AuthRepository {
 
         _currentUser = UserProfile(
           id: userData['id']?.toString() ?? 'user_${DateTime.now().millisecondsSinceEpoch}',
-          username: cleanUsername,
+          username: userData['username']?.toString().isNotEmpty == true
+              ? userData['username'].toString()
+              : cleanUsername,
           fullName: userData['name']?.toString() ?? cleanUsername,
           role: userRole,
           relation: userRole == UserRole.admin
@@ -123,6 +122,71 @@ class HttpAuthRepository implements AuthRepository {
     final fallbackUser = await _mockFallback.loginWithCredentials(username, password);
     _currentUser = fallbackUser;
     return _currentUser;
+  }
+
+  @override
+  Future<CaregiverSignUpInitiationResult> initiateCaregiverSignUp(String email) async {
+    final res = await _apiClient.post(
+      '/auth/onboarding/initiate',
+      body: {'email': email.trim()},
+    );
+    if (res is Map<String, dynamic>) {
+      return CaregiverSignUpInitiationResult.fromJson(res);
+    }
+    throw Exception('Unexpected response from onboarding service');
+  }
+
+  @override
+  Future<CaregiverSignUpInitiationResult> resendCaregiverSignUpCode(String email) async {
+    final res = await _apiClient.post(
+      '/auth/onboarding/resend',
+      body: {'email': email.trim()},
+    );
+    if (res is Map<String, dynamic>) {
+      return CaregiverSignUpInitiationResult.fromJson(res);
+    }
+    throw Exception('Unexpected response from onboarding service');
+  }
+
+  @override
+  Future<UserProfile> finalizeCaregiverSignUp({
+    required String email,
+    required String code,
+    required String username,
+    required String password,
+  }) async {
+    final res = await _apiClient.post(
+      '/auth/onboarding/finalize',
+      body: {
+        'email': email.trim(),
+        'code': code.trim(),
+        'username': username.trim(),
+        'password': password,
+      },
+    );
+
+    if (res is Map<String, dynamic> && res['token'] != null) {
+      final token = res['token'] as String;
+      _apiClient.setAuthToken(token);
+
+      final userData = res['user'] as Map<String, dynamic>? ?? {};
+      final resolvedUsername = userData['username']?.toString().isNotEmpty == true
+          ? userData['username'].toString()
+          : username.trim();
+
+      _currentUser = UserProfile(
+        id: userData['id']?.toString() ?? 'user_${DateTime.now().millisecondsSinceEpoch}',
+        username: resolvedUsername,
+        fullName: userData['name']?.toString() ?? resolvedUsername,
+        role: UserRole.visitingCaregiver,
+        relation: 'Caregiver',
+        phone: userData['phone_number']?.toString() ?? '555-0100',
+        linkedResidentId: '3b471508-d528-4cfb-a9e0-4ac4b06eeec9',
+      );
+      return _currentUser!;
+    }
+
+    throw Exception('Unexpected response while finalizing caregiver sign-up');
   }
 
   @override

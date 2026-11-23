@@ -141,3 +141,20 @@
 
 - **Given** an in-flight batch regimen job where `getActiveBatchJob` returns `null` right as the backend finishes, **When** the next poll ticks, **Then** the app falls back to `getBatchJob(residentId, jobId)`, emits the completion event, and stages the hydrated preview plan without losing the result.
 - **Given** a generated or applied activity whose facilitation steps contain `"1. Prepare Tray & Seating: ..."`, **When** opened in either the regimen preview or task detail sheet, **Then** the A2UI surface renders a single numbered badge (`1`) with bold heading `Prepare Tray & Seating` and never displays `"1. 1."`.
+
+
+---
+
+## 9. Domain 8: Caregiver Email Sign-Up, Deep-Link Finalization & Sign-Out
+
+### Requirements
+
+- **FR-033 (Login Page Caregiver Sign-Up Entry & Email Initiation):** The credential login screen (`LoginScreen`) MUST provide a visible **Sign Up as Caregiver** button navigating unauthenticated users to `/signup` (`CaregiverSignUpScreen`), where they validate and submit their email address (`POST /api/v1/auth/onboarding/initiate`) and receive a confirmation card with a direct action to proceed to `/signup/finalize?email=<encoded>`.
+- **FR-034 (In-App & Deep-Link Sign-Up Finalization with Editable Username):** Both direct navigation and email finalization links MUST open `/signup/finalize?email=...` (`CaregiverFinalizeSignUpScreen`) as an unauthenticated route with the email pre-populated and an editable **Caregiver Username** field pre-filled from the email local-part prefix. Users MUST be able to enter the 6-digit verification code, confirm or customize their username (3–64 chars, no spaces), enter and confirm an 8+ character password, resend the 6-digit verification email (`POST /api/v1/auth/onboarding/resend`), and upon successful finalization (`POST /api/v1/auth/onboarding/finalize`) automatically store the JWT bearer token, hydrate `AuthState` as `UserRole.visitingCaregiver` with the default standalone resident context, and navigate directly to `/portal`.
+- **FR-035 (Header Sign-Out & Username/Email Re-Authentication):** The shared resident header (`ResidentHeader`) MUST expose a **Sign Out** button (`Key('header_logout_button')`) in the top brand bar that clears the active session and navigates to `/login`. Credential login (`loginWithCredentials`) MUST send the caregiver's raw username or email identifier without unconditionally appending `@kubocare.com`.
+
+### Acceptance Scenarios
+
+- **Given** an unauthenticated caregiver on `LoginScreen`, **When** they tap **Sign Up as Caregiver**, submit `clara.nurse@example.com`, and proceed to `/signup/finalize?email=clara.nurse%40example.com`, **Then** the finalization screen pre-populates `clara.nurse@example.com` and pre-fills the editable username field with `clara.nurse`.
+- **Given** a caregiver on `/signup/finalize` who enters a valid 6-digit code, customizes their username to `nurse_clara`, enters a matching 8+ character password, and taps **Complete Sign Up**, **Then** the app auto-authenticates them and navigates directly to `/portal`.
+- **Given** an authenticated caregiver on any primary care tab, **When** they tap the **Sign Out** icon in the top header, **Then** their session is cleared and they are redirected to `/login`, where they can sign back in with `nurse_clara` and their password.

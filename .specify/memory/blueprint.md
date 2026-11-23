@@ -31,7 +31,8 @@
 - `test` — Automated verification suite covering unit logic, widget screens/modals, end-to-end regimen specs, and Android/iOS platform harnesses; **code-owned**
 - `web` — Web host shell providing the HTML entry page, PWA manifest, and web icons for Flutter web builds; **code-owned**
 - `windows` — Windows desktop host shell built with CMake and Win32 to host the Flutter engine; **code-owned**
-- `Regimen Timeout Sync & Delivery` — Delivers non-blocking background batch regimen completion with direct-by-job-ID fallback polling and renders both preview and applied activity reviews via the official Dart A2UI v1.0 renderer; **distilled** → `specs/013-fix-regimen-timeout-sync`
+- `Regimen Timeout Sync & Delivery` — Delivers non-blocking background batch regimen completion with direct-by-job-ID fallback polling and renders both preview and applied activity reviews via the official Dart A2UI v1.0 renderer; **distilled** → `specs/000-product-baseline`
+- `Caregiver Sign-Up & Auth Flow` — Adds caregiver email sign-up initiation, deep-link and in-app 6-digit finalization with editable username and password setup, auto-login into the standalone care portal, and header Sign Out; **distilled** → `specs/000-product-baseline`
 
 ---
 
@@ -242,8 +243,8 @@ For exact behavior, read the code under `windows/`. Do not restate it here.
 ---
 
 ## Regimen Timeout Sync & Delivery
-<!-- blueprint:section state=distilled owner=specs/013-fix-regimen-timeout-sync -->
-> **Distilled — owned by `specs/013-fix-regimen-timeout-sync`.** (implemented at `lib/presentation/a2ui/`, `lib/presentation/care_tasks/`, and `lib/data/repositories/`) The full detail lives in that feature spec, which is the source of truth. This section is a summary + index.
+<!-- blueprint:section state=distilled owner=specs/000-product-baseline -->
+> **Distilled — owned by `specs/000-product-baseline`.** (implemented at `lib/presentation/a2ui/`, `lib/presentation/care_tasks/`, and `lib/data/repositories/`) The full detail lives in the canonical baseline spec, which is the source of truth. This section is a summary + index.
 <!-- blueprint:code path=lib/presentation/a2ui sha=15f5bb7c6c984048b23a8d7ac3f3c6714ebe0455 -->
 
 Delivers non-blocking background batch regimen completion with direct-by-job-ID fallback polling and renders both preview and applied activity reviews via the official Dart A2UI v1.0 renderer. At a glance:
@@ -252,7 +253,21 @@ Delivers non-blocking background batch regimen completion with direct-by-job-ID 
 - **Non-blocking navigation** — Keeps all care tabs and resident switching interactive while background polling tracks active jobs and surfaces completion banners.
 - **A2UI v1.0 review panels** — Renders RegimenPreviewSheet and applied CareTasksScreen detail sheets with a2ui_flutter and custom Kubo Regimen catalog components, stripping duplicate step prefixes.
 
-For every requirement, threshold, and entity shape, see `specs/013-fix-regimen-timeout-sync/spec.md`.
+For every requirement, threshold, and entity shape, see `specs/000-product-baseline/spec.md` (Domain 7).
+Do not restate those details here — this section indexes the spec.
+---
+
+## Caregiver Sign-Up & Auth Flow
+<!-- blueprint:section state=distilled owner=specs/000-product-baseline -->
+> **Distilled — owned by `specs/000-product-baseline`.** (implemented at `lib/presentation/auth/`, `lib/presentation/shared/resident_header.dart`, `lib/data/repositories/`, and `lib/core/router/app_router.dart`) The full detail lives in the canonical baseline spec, which is the source of truth. This section is a summary + index.
+
+Adds caregiver email sign-up initiation, deep-link and in-app 6-digit finalization with editable username and password setup, auto-login into the standalone care portal, and header Sign Out. At a glance:
+
+- **Login & Sign-Up routes** — `LoginScreen` exposes `Sign Up as Caregiver` navigating to unauthenticated `/signup` (`CaregiverSignUpScreen`) and `/signup/finalize?email=...` (`CaregiverFinalizeSignUpScreen`).
+- **Dual-repository onboarding** — `HttpAuthRepository` and `MockAuthRepository` implement initiate, resend, finalize, and raw username/email credential login.
+- **Session & Sign-Out** — Finalization stores the JWT on `ApiClient`, hydrates `UserRole.visitingCaregiver` with the standalone resident context, navigates to `/portal`, and exposes Sign Out in `ResidentHeader`.
+
+For every requirement, threshold, and entity shape, see `specs/000-product-baseline/spec.md` (Domain 8).
 Do not restate those details here — this section indexes the spec.
 ---
 
